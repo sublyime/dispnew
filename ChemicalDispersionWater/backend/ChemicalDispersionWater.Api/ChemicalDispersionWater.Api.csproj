@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChemicalDispersionWater.Domain\ChemicalDispersionWater.Domain.csproj" />
+    <ProjectReference Include="..\..\shared\ChemicalDispersionWater.SharedModels.csproj" />
   </ItemGroup>
 
 </Project>

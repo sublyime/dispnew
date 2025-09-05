@@ -737,6 +737,16 @@
         "runtime": {
           "bin/placeholder/ChemicalDispersionWater.Domain.dll": {}
         }
+      },
+      "ChemicalDispersionWater.SharedModels/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/ChemicalDispersionWater.SharedModels.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/ChemicalDispersionWater.SharedModels.dll": {}
+        }
       }
     }
   },
@@ -2176,11 +2186,17 @@
       "type": "project",
       "path": "../ChemicalDispersionWater.Domain/ChemicalDispersionWater.Domain.csproj",
       "msbuildProject": "../ChemicalDispersionWater.Domain/ChemicalDispersionWater.Domain.csproj"
+    },
+    "ChemicalDispersionWater.SharedModels/1.0.0": {
+      "type": "project",
+      "path": "../../shared/ChemicalDispersionWater.SharedModels.csproj",
+      "msbuildProject": "../../shared/ChemicalDispersionWater.SharedModels.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "ChemicalDispersionWater.Domain >= 1.0.0",
+      "ChemicalDispersionWater.SharedModels >= 1.0.0",
       "Microsoft.AspNetCore.OpenApi >= 10.0.0-preview.7.25380.108",
       "Microsoft.EntityFrameworkCore.Design >= 9.0.8",
       "NetTopologySuite >= 2.6.0",
@@ -2215,6 +2231,9 @@
           "projectReferences": {
             "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj": {
               "projectPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj"
+            },
+            "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
+              "projectPath": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj"
             }
           }
         }

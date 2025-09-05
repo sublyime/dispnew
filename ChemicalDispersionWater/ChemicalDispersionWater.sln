@@ -17,6 +17,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{CE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChemicalDispersionWater.Blazor", "frontend\ChemicalDispersionWater.Blazor\ChemicalDispersionWater.Blazor.csproj", "{343B2BF6-B0B2-4DAA-90FA-925CAA20581A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shared", "shared", "{4F52FD11-658E-A102-6CD3-7D7C16FFA15B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChemicalDispersionWater.SharedModels", "shared\ChemicalDispersionWater.SharedModels.csproj", "{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +91,18 @@ Global
 		{343B2BF6-B0B2-4DAA-90FA-925CAA20581A}.Release|x64.Build.0 = Release|Any CPU
 		{343B2BF6-B0B2-4DAA-90FA-925CAA20581A}.Release|x86.ActiveCfg = Release|Any CPU
 		{343B2BF6-B0B2-4DAA-90FA-925CAA20581A}.Release|x86.Build.0 = Release|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Debug|x64.Build.0 = Debug|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Debug|x86.Build.0 = Debug|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Release|x64.ActiveCfg = Release|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Release|x64.Build.0 = Release|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Release|x86.ActiveCfg = Release|Any CPU
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -97,5 +113,6 @@ Global
 		{5829539A-EF31-44EC-8D01-622E94F733CA} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 		{73112304-2395-4BC3-B75B-F84DCF45D92A} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 		{343B2BF6-B0B2-4DAA-90FA-925CAA20581A} = {CE609670-85B9-0D16-FB54-ED063D5D8A6D}
+		{2B283DDB-C3F8-47AB-A8EE-C2125FB0EC84} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 	EndGlobalSection
 EndGlobal
