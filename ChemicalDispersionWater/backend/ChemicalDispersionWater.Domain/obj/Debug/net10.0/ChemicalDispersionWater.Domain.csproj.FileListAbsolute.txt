@@ -1,0 +1,6 @@
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.Domain\obj\Debug\net10.0\ChemicalDispersionWater.Domain.csproj.AssemblyReference.cache
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.Domain\obj\Debug\net10.0\ChemicalDispersionWater.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.Domain\obj\Debug\net10.0\ChemicalDispersionWater.Domain.AssemblyInfoInputs.cache
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.Domain\obj\Debug\net10.0\ChemicalDispersionWater.Domain.AssemblyInfo.cs
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.Domain\obj\Debug\net10.0\ChemicalDispersionWater.Domain.csproj.CoreCompileInputs.cache
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.Domain\obj\Debug\net10.0\ChemicalDispersionWater.Domain.sourcelink.json

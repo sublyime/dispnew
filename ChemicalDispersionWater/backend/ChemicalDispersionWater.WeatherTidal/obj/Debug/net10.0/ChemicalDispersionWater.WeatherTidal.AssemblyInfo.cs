@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChemicalDispersionWater.WeatherTidal")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f8d01b70428ae6e7b1247b5c6089a66dc6c74365")]
 [assembly: System.Reflection.AssemblyProductAttribute("ChemicalDispersionWater.WeatherTidal")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChemicalDispersionWater.WeatherTidal")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

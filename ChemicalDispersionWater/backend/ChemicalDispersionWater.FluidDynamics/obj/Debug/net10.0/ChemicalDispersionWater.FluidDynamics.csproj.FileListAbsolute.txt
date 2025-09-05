@@ -1,0 +1,12 @@
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\bin\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.deps.json
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\bin\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.dll
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\bin\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.pdb
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.AssemblyInfoInputs.cache
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.AssemblyInfo.cs
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.csproj.CoreCompileInputs.cache
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.sourcelink.json
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.dll
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\refint\ChemicalDispersionWater.FluidDynamics.dll
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ChemicalDispersionWater.FluidDynamics.pdb
+C:\code\ChemicalDispersionWater\backend\ChemicalDispersionWater.FluidDynamics\obj\Debug\net10.0\ref\ChemicalDispersionWater.FluidDynamics.dll

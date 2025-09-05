@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "ChemicalDispersionWater.WeatherTidal/1.0.0": {
+        "runtime": {
+          "ChemicalDispersionWater.WeatherTidal.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ChemicalDispersionWater.WeatherTidal/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
