@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj": {}
+    "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj": {}
   },
   "projects": {
-    "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj": {
+    "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj",
+        "projectUniqueName": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj",
         "projectName": "ChemicalDispersionWater.FluidDynamics",
-        "projectPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj",
+        "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\ChemicalDispersionWater.FluidDynamics.csproj",
         "packagesPath": "C:\\Users\\sublyime\\.nuget\\packages\\",
-        "outputPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\obj\\",
+        "outputPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.FluidDynamics\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\sublyime\\AppData\\Roaming\\NuGet\\NuGet.Config"

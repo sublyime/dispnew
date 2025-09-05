@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "/SBDN10E8Gg=",
+  "dgSpecHash": "e4TU8PPhgbk=",
   "success": true,
-  "projectFilePath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\ChemicalDispersionWater.Api.csproj",
+  "projectFilePath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\ChemicalDispersionWater.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\sublyime\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\sublyime\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.0-preview.7.25380.108\\microsoft.aspnetcore.openapi.10.0.0-preview.7.25380.108.nupkg.sha512",

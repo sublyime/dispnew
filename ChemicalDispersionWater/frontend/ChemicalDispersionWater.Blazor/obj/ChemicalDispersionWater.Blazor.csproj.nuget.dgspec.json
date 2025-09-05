@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\code\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj": {}
+    "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj": {}
   },
   "projects": {
-    "C:\\code\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj": {
+    "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\code\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj",
+        "projectUniqueName": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj",
         "projectName": "ChemicalDispersionWater.Blazor",
-        "projectPath": "C:\\code\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj",
+        "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj",
         "packagesPath": "C:\\Users\\sublyime\\.nuget\\packages\\",
-        "outputPath": "C:\\code\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\obj\\",
+        "outputPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\sublyime\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -26,8 +26,8 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
-                "projectPath": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj"
+              "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
+                "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj"
               }
             }
           }
@@ -385,14 +385,14 @@
         }
       }
     },
-    "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
+    "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
+        "projectUniqueName": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
         "projectName": "ChemicalDispersionWater.SharedModels",
-        "projectPath": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
+        "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
         "packagesPath": "C:\\Users\\sublyime\\.nuget\\packages\\",
-        "outputPath": "C:\\code\\ChemicalDispersionWater\\shared\\obj\\",
+        "outputPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\sublyime\\AppData\\Roaming\\NuGet\\NuGet.Config"

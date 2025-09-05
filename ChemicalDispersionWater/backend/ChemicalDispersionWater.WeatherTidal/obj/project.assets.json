@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.WeatherTidal\\ChemicalDispersionWater.WeatherTidal.csproj",
+      "projectUniqueName": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.WeatherTidal\\ChemicalDispersionWater.WeatherTidal.csproj",
       "projectName": "ChemicalDispersionWater.WeatherTidal",
-      "projectPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.WeatherTidal\\ChemicalDispersionWater.WeatherTidal.csproj",
+      "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.WeatherTidal\\ChemicalDispersionWater.WeatherTidal.csproj",
       "packagesPath": "C:\\Users\\sublyime\\.nuget\\packages\\",
-      "outputPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.WeatherTidal\\obj\\",
+      "outputPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.WeatherTidal\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\sublyime\\AppData\\Roaming\\NuGet\\NuGet.Config"

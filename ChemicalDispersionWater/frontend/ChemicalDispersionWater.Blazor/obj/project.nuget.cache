@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "qY2CFkrjGyQ=",
+  "dgSpecHash": "8+E8tuR+I/g=",
   "success": true,
-  "projectFilePath": "C:\\code\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj",
+  "projectFilePath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\frontend\\ChemicalDispersionWater.Blazor\\ChemicalDispersionWater.Blazor.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\sublyime\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.0-preview.7.25380.108\\microsoft.aspnetcore.app.internal.assets.10.0.0-preview.7.25380.108.nupkg.sha512",
     "C:\\Users\\sublyime\\.nuget\\packages\\microsoft.aspnetcore.authorization\\10.0.0-preview.7.25380.108\\microsoft.aspnetcore.authorization.10.0.0-preview.7.25380.108.nupkg.sha512",

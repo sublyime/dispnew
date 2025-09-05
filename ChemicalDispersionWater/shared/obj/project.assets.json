@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
+      "projectUniqueName": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
       "projectName": "ChemicalDispersionWater.SharedModels",
-      "projectPath": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
+      "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj",
       "packagesPath": "C:\\Users\\sublyime\\.nuget\\packages\\",
-      "outputPath": "C:\\code\\ChemicalDispersionWater\\shared\\obj\\",
+      "outputPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\sublyime\\AppData\\Roaming\\NuGet\\NuGet.Config"

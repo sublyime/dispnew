@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "cpqru5KzlPU=",
+  "dgSpecHash": "7HjOl1JK0gc=",
   "success": true,
-  "projectFilePath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj",
+  "projectFilePath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\sublyime\\.nuget\\packages\\nettopologysuite\\2.6.0\\nettopologysuite.2.6.0.nupkg.sha512"
   ],

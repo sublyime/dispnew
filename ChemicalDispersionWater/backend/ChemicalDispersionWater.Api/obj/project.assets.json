@@ -2210,11 +2210,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\ChemicalDispersionWater.Api.csproj",
+      "projectUniqueName": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\ChemicalDispersionWater.Api.csproj",
       "projectName": "ChemicalDispersionWater.Api",
-      "projectPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\ChemicalDispersionWater.Api.csproj",
+      "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\ChemicalDispersionWater.Api.csproj",
       "packagesPath": "C:\\Users\\sublyime\\.nuget\\packages\\",
-      "outputPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\obj\\",
+      "outputPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\sublyime\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -2229,11 +2229,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj": {
-              "projectPath": "C:\\code\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj"
+            "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj": {
+              "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\backend\\ChemicalDispersionWater.Domain\\ChemicalDispersionWater.Domain.csproj"
             },
-            "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
-              "projectPath": "C:\\code\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj"
+            "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj": {
+              "projectPath": "C:\\code\\chemicalwaterdispersion1\\ChemicalDispersionWater\\shared\\ChemicalDispersionWater.SharedModels.csproj"
             }
           }
         }
