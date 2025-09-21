@@ -8,10 +8,6 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\ChemicalDispersionWater.Blazor.sourcelink.json
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\blazor.boot.json
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\blazor.webassembly.js
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.0tcacw9oc8.pdb
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.1j7yei170h.wasm
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.qe6szpj5h7.pdb
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.6rqx4ucucs.wasm
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\dotnet.js
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\dotnet.js.map
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\dotnet.native.9ih887ebfz.js
@@ -218,7 +214,6 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Runtime.Serialization.Primitives.ygbpnny2mc.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\Microsoft.Extensions.Options.olt0jsk54c.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Runtime.hexcao080t.wasm.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.qe6szpj5h7.pdb.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Security.Cryptography.Encoding.nrsiudkmau.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Collections.ejndmmtq8p.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\icudt_CJK.tjcz0u77k5.dat.gz
@@ -287,7 +282,6 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Reflection.Emit.wqaeaqpqjx.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Core.i2gfsit2dg.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.AppContext.s2mli7k045.wasm.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.6rqx4ucucs.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Collections.Immutable.hn2kphqqyx.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\dotnet.runtime.js.map.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Data.DataSetExtensions.rwrekrq7sx.wasm.gz
@@ -342,7 +336,6 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Xml.1ortbls4va.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.ca8rpd37di.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\Microsoft.Extensions.FileProviders.Physical.qnaw45f7ij.wasm.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.1j7yei170h.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Threading.e7dy3zxxc8.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Drawing.Primitives.dbya5q61h6.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Security.Cryptography.X509Certificates.4694slsze8.wasm.gz
@@ -396,7 +389,6 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Linq.Parallel.f7fejzp6g2.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Net.NetworkInformation.dggc7r1ubt.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\Microsoft.AspNetCore.Components.Forms.thhw8cz9wu.wasm.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.0tcacw9oc8.pdb.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.Net.Ping.s1znquqtyf.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\System.IO.Compression.Brotli.v5j03f7yzu.wasm.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\icudt_EFIGS.tptq2av103.dat.gz
@@ -1076,11 +1068,6 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\1al00f6tot-tjcz0u77k5.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\wj21jcxp9n-tptq2av103.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\4ede72n1u2-lfu7j35m59.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\cd3g9k3zto-6rqx4ucucs.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\0zpv3xcgrm-qe6szpj5h7.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\njjh001kyf-1j7yei170h.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\w4ga3e6sld-0tcacw9oc8.gz
-C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\dgqho8cwi6-fdm87byk2g.gz
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\staticwebassets.build.json
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\staticwebassets.build.json.cache
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\staticwebassets.development.json
@@ -1090,3 +1077,16 @@ C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\Chemic
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\refint\ChemicalDispersionWater.Blazor.dll
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\ChemicalDispersionWater.Blazor.pdb
 C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\ref\ChemicalDispersionWater.Blazor.dll
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.x798nb6id9.pdb
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.p3bx291gfh.wasm
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.62dxsatp08.pdb
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.9jn01411jv.wasm
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.62dxsatp08.pdb.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.SharedModels.9jn01411jv.wasm.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.p3bx291gfh.wasm.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\bin\Debug\net9.0\wwwroot\_framework\ChemicalDispersionWater.Blazor.x798nb6id9.pdb.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\cd3g9k3zto-9jn01411jv.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\0zpv3xcgrm-62dxsatp08.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\njjh001kyf-p3bx291gfh.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\w4ga3e6sld-x798nb6id9.gz
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net9.0\compressed\dgqho8cwi6-5hel3dcavc.gz
