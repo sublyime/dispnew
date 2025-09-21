@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using ChemicalDispersionWater.Domain.Models; // Use shared models or DTOs
+using ChemicalDispersionWater.SharedModels.DTOs; // Use shared DTOs
 
 public class SpillService
 {
@@ -12,22 +12,22 @@ public class SpillService
         _http = http;
     }
 
-    public async Task<List<Spill>> GetSpillsAsync()
+    public async Task<List<SpillDto>> GetSpillsAsync()
     {
-        return await _http.GetFromJsonAsync<List<Spill>>("api/spill");
+        return await _http.GetFromJsonAsync<List<SpillDto>>("api/spill") ?? new List<SpillDto>();
     }
 
-    public async Task<Spill> GetSpillAsync(int id)
+    public async Task<SpillDto?> GetSpillAsync(int id)
     {
-        return await _http.GetFromJsonAsync<Spill>($"api/spill/{id}");
+        return await _http.GetFromJsonAsync<SpillDto>($"api/spill/{id}");
     }
 
-    public async Task CreateSpillAsync(Spill spill)
+    public async Task CreateSpillAsync(SpillDto spill)
     {
         await _http.PostAsJsonAsync("api/spill", spill);
     }
 
-    public async Task UpdateSpillAsync(Spill spill)
+    public async Task UpdateSpillAsync(SpillDto spill)
     {
         await _http.PutAsJsonAsync($"api/spill/{spill.Id}", spill);
     }
