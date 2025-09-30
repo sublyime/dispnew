@@ -1,0 +1,22 @@
+{
+  "name": "move-in-move-out-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React Native mobile app for Move In/Move Out Inspection",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "^50.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-native": "^0.73.0",
+    "react-native-paper": "^5.10.0",
+    "react-navigation": "^4.4.4",
+    "axios": "^1.7.2"
+  }
+}

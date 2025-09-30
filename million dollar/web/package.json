@@ -1,0 +1,23 @@
+{
+  "name": "move-in-move-out-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React web app for Move In/Move Out Inspection",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@mui/material": "^5.15.15",
+    "@mui/icons-material": "^5.15.15",
+    "axios": "^1.7.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.23.1"
+  },
+  "devDependencies": {
+    "react-scripts": "^5.0.1"
+  }
+}

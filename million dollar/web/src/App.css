@@ -1,0 +1,4 @@
+body { font-family: Arial, sans-serif; background: #f7f7f7; }
+input, button { display: block; margin: 12px 0; padding: 8px; width: 100%; max-width: 300px; }
+div { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+h2 { margin-top: 0; }
