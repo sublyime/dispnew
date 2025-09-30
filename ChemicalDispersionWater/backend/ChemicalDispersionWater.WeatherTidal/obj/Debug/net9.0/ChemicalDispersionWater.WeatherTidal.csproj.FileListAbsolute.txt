@@ -1,0 +1,12 @@
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\bin\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.deps.json
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\bin\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.dll
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\bin\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.pdb
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.AssemblyInfoInputs.cache
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.AssemblyInfo.cs
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.csproj.CoreCompileInputs.cache
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.sourcelink.json
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.dll
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\refint\ChemicalDispersionWater.WeatherTidal.dll
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ChemicalDispersionWater.WeatherTidal.pdb
+C:\code\dispwer\chemicalwaterdispersion1\ChemicalDispersionWater\backend\ChemicalDispersionWater.WeatherTidal\obj\Debug\net9.0\ref\ChemicalDispersionWater.WeatherTidal.dll

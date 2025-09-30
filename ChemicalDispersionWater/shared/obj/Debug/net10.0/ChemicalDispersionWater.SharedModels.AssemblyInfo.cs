@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChemicalDispersionWater.SharedModels")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1d6c21d324cd2265af176c2dfc4bc383ef7fbf72")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ba088a42df07ec7b2184c69c9811d16293fb6058")]
 [assembly: System.Reflection.AssemblyProductAttribute("ChemicalDispersionWater.SharedModels")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChemicalDispersionWater.SharedModels")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
