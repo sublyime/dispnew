@@ -56,10 +56,23 @@ class WeatherService {
 
       const { forecastOffice, gridX, gridY } = gridResponse.data.properties;
 
-      // Extract office code from forecastOffice URL if needed
-      const officeCode = typeof forecastOffice === 'string' && forecastOffice.includes('/') 
-        ? forecastOffice.split('/').pop() 
-        : forecastOffice;
+      // Extract office code from forecastOffice URL
+      let officeCode;
+      if (typeof forecastOffice === 'string') {
+        if (forecastOffice.includes('/offices/')) {
+          // Handle URL format like "https://api.weather.gov/offices/TOP"
+          officeCode = forecastOffice.split('/offices/').pop();
+        } else if (forecastOffice.includes('/')) {
+          // Handle other URL formats
+          officeCode = forecastOffice.split('/').pop();
+        } else {
+          // Already just the office code
+          officeCode = forecastOffice;
+        }
+      } else {
+        // Fallback to gridId if available
+        officeCode = gridResponse.data.properties.gridId || 'TOP';
+      }
 
       // Get the current conditions
       const observationsResponse = await axios.get(

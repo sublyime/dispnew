@@ -318,9 +318,21 @@ class DispersionService {
       // Model parameters - validate inputs per ALOHA specifications
       const effectiveHeight = Math.max(parseFloat(release_height) || 0.0, 0.0);
       const windSpeed = Math.max(parseFloat(wind_speed) || 2.0, 1.0); // ALOHA minimum 1 m/s
-      const windDir = parseFloat(wind_direction) || 270; // Default west wind
+      let windDir = parseFloat(wind_direction);
+      
+      // Validate wind direction and normalize to 0-360 range
+      if (isNaN(windDir) || !isFinite(windDir)) {
+        windDir = 270; // Default west wind
+      } else {
+        // Normalize to 0-360 range
+        windDir = ((windDir % 360) + 360) % 360;
+      }
+      
       const stability = atmospheric_stability || 'D';
       const mixingHeight = Math.max(parseFloat(mixing_height) || 1000, 100); // Default 1000m, minimum 100m
+      
+      // Debug log input parameters
+      console.log(`Gaussian plume inputs: wind_speed=${windSpeed}, wind_dir=${windDir}, stability=${stability}, height=${effectiveHeight}`)
 
       // Validate wind speed constraint per ALOHA documentation
       if (windSpeed < 1.0) {
@@ -407,6 +419,12 @@ class DispersionService {
         
         // Convert wind direction to mathematical angle (0° = East, counter-clockwise)
         const mathAngle = (90 - windDir) * Math.PI / 180;
+        
+        // Validate mathAngle
+        if (!isFinite(mathAngle)) {
+          console.warn(`Invalid mathematical angle calculated from wind direction ${windDir}°, skipping distance ${distance}m`);
+          continue;
+        }
 
         // Calculate downwind point
         const downwindLat = latitude + (distance * Math.cos(mathAngle)) / 111320;
@@ -422,7 +440,9 @@ class DispersionService {
         const rightLon = downwindLon - (crosswindDistance * Math.sin(crosswindAngle)) / (111320 * Math.cos(latitude * Math.PI / 180));
 
         // Validate coordinates before adding to plume
-        if (isFinite(downwindLat) && isFinite(downwindLon) && isFinite(leftLat) && isFinite(leftLon) && isFinite(rightLat) && isFinite(rightLon)) {
+        if (isFinite(downwindLat) && isFinite(downwindLon) && isFinite(leftLat) && isFinite(leftLon) && isFinite(rightLat) && isFinite(rightLon) &&
+            Math.abs(downwindLat) <= 90 && Math.abs(leftLat) <= 90 && Math.abs(rightLat) <= 90 &&
+            Math.abs(downwindLon) <= 180 && Math.abs(leftLon) <= 180 && Math.abs(rightLon) <= 180) {
           plumePoints.push({
             center: [downwindLon, downwindLat],
             left: [leftLon, leftLat],
@@ -432,7 +452,15 @@ class DispersionService {
             crosswind_distance: crosswindDistance
           });
         } else {
-          console.warn(`Invalid coordinates at distance ${distance}m, skipping point`);
+          console.warn(`Invalid coordinates at distance ${distance}m:`, {
+            mathAngle: mathAngle * 180 / Math.PI,
+            windDir,
+            downwind: [downwindLon, downwindLat],
+            left: [leftLon, leftLat], 
+            right: [rightLon, rightLat],
+            crosswindDistance,
+            sigmaY
+          });
         }
       }
 
@@ -567,8 +595,8 @@ class DispersionService {
     const sigmaZ = params.c * Math.pow(distance, params.d);
     
     return {
-      sigma_y: sigmaY,
-      sigma_z: sigmaZ,
+      sigmaY: sigmaY,
+      sigmaZ: sigmaZ,
       distance: distance,
       stability_class: stabilityClass,
       dispersion_params: params
@@ -662,7 +690,9 @@ class DispersionService {
       area += lonDiff * (2 + Math.sin(lat1Rad) + Math.sin(lat2Rad));
     }
     
-    area = Math.abs(area) * 6371000 * 6371000 / 2; // Earth radius squared
+    // Calculate area in square kilometers instead of square meters to avoid overflow
+    // Earth radius = 6371 km
+    area = Math.abs(area) * 6371 * 6371 / 2; 
     
     return area;
   }

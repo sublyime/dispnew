@@ -393,10 +393,17 @@ class MapManager {
      * Display dispersion plume
      */
     displayPlume(calculation) {
+        console.log('Displaying plume with calculation:', calculation);
+        
         // Clear existing plumes
         this.layers.plumes.clearLayers();
 
-        if (!calculation.plume_geometry) return;
+        if (!calculation.plume_geometry) {
+            console.warn('No plume geometry found in calculation');
+            return;
+        }
+
+        console.log('Plume geometry:', calculation.plume_geometry);
 
         const plume = L.geoJSON(calculation.plume_geometry, {
             style: {
@@ -422,8 +429,12 @@ class MapManager {
 
         this.layers.plumes.addLayer(plume);
 
+        console.log('Plume added to map, fitting bounds');
+        
         // Fit map to plume bounds
         this.map.fitBounds(plume.getBounds(), { padding: [20, 20] });
+        
+        console.log('Plume display completed');
     }
 
     /**

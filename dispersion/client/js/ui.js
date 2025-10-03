@@ -246,11 +246,15 @@ class UIManager {
             // Display on map
             window.MapManager.displayRelease(response.release_event);
 
-            // Start dispersion calculation
-            await this.startDispersionCalculation(response.release_event.id);
-
-            this.closeModal(document.getElementById('releaseModal'));
+            // Close modal immediately after successful creation
+            this.closeModal('releaseModal');
             this.showToast('Release created successfully', 'success');
+
+            // Start dispersion calculation (run async in background)
+            this.startDispersionCalculation(response.release_event.id).catch(error => {
+                console.error('Error in background dispersion calculation:', error);
+                this.showToast('Error in dispersion calculation, but release was created', 'warning');
+            });
 
         } catch (error) {
             console.error('Error creating release:', error);
@@ -277,7 +281,7 @@ class UIManager {
 
             const response = await API.createReceptor(receptorData);
 
-            this.closeModal(document.getElementById('receptorModal'));
+            this.closeModal('receptorModal');
             this.showToast('Receptor created successfully', 'success');
 
             // Reload receptors on map
@@ -294,13 +298,23 @@ class UIManager {
      */
     async startDispersionCalculation(releaseId) {
         try {
+            console.log('Starting dispersion calculation for release:', releaseId);
+            
             // Wait a moment for the dispersion calculation to complete
             await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Get the latest calculation for this release
-            const calculation = await API.getLatestCalculation(releaseId);
+            const response = await API.getLatestCalculation(releaseId);
+            
+            console.log('Received API response:', response);
+            
+            // Extract calculation from response
+            const calculation = response.calculation || response;
+            
+            console.log('Extracted calculation:', calculation);
             
             if (calculation && calculation.plume_geometry) {
+                console.log('Displaying plume and updating UI...');
                 window.MapManager.displayPlume(calculation);
                 if (calculation.receptor_impacts) {
                     this.updateReceptorImpacts(calculation.receptor_impacts);
@@ -324,6 +338,12 @@ class UIManager {
      */
     updateReceptorImpacts(impacts) {
         const container = document.getElementById('receptorImpacts');
+        
+        // Check if container exists before trying to update it
+        if (!container) {
+            console.warn('receptorImpacts element not found in HTML');
+            return;
+        }
         
         if (!impacts || impacts.length === 0) {
             container.innerHTML = '<p>No receptor impacts calculated</p>';
