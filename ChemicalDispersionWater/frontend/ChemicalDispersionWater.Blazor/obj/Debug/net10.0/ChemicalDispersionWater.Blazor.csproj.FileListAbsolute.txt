@@ -1,8 +1,0 @@
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.csproj.AssemblyReference.cache
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\rpswa.dswa.cache.json
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.GeneratedMSBuildEditorConfig.editorconfig
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.AssemblyInfoInputs.cache
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.AssemblyInfo.cs
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.csproj.CoreCompileInputs.cache
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.MvcApplicationPartsAssemblyInfo.cache
-C:\code\ChemicalDispersionWater\frontend\ChemicalDispersionWater.Blazor\obj\Debug\net10.0\ChemicalDispersionWater.Blazor.sourcelink.json
