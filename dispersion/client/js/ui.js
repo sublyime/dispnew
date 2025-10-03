@@ -484,7 +484,7 @@ class UIManager {
     async stopRelease(releaseId) {
         if (confirm('Are you sure you want to stop this release?')) {
             try {
-                await API.updateRelease(releaseId, { status: 'stopped' });
+                await API.updateReleaseStatus(releaseId, 'stopped');
                 this.showToast('Release stopped', 'success');
             } catch (error) {
                 console.error('Error stopping release:', error);
