@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "expo": "^50.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+  "react": "18.2.0",
+  "react-dom": "18.2.0",
     "react-native": "^0.73.0",
     "react-native-paper": "^5.10.0",
     "react-navigation": "^4.4.4",
