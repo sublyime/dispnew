@@ -46,6 +46,8 @@ class DispersionService {
    */
   async createReleaseEvent(releaseData) {
     try {
+      console.log('Creating release event with data:', JSON.stringify(releaseData, null, 2));
+      
       const {
         latitude,
         longitude,
@@ -64,10 +66,29 @@ class DispersionService {
         throw new Error('Missing required fields for release event');
       }
 
+      // Validate coordinates are valid numbers
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        throw new Error(`Invalid coordinates: latitude=${latitude}, longitude=${longitude}`);
+      }
+      
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        throw new Error(`Coordinates out of range: latitude=${lat}, longitude=${lng}`);
+      }
+
       // Get chemical properties
       const chemical = await this.getChemicalProperties(chemical_id);
       if (!chemical) {
-        throw new Error('Chemical not found');
+        throw new Error(`Chemical with ID ${chemical_id} not found`);
+      }
+
+      // Validate chemical has required properties for ALOHA modeling
+      if (!chemical.molecular_weight && !chemical.density) {
+        console.warn(`Chemical ${chemical_id} missing critical properties, using defaults`);
+        chemical.molecular_weight = chemical.molecular_weight || 29.0; // Default to air
+        chemical.density = chemical.density || 1.0; // Default density
       }
 
       // Get current weather data
@@ -87,8 +108,8 @@ class DispersionService {
       `;
 
       const values = [
-        parseFloat(longitude),
-        parseFloat(latitude),
+        lng,  // Use validated longitude
+        lat,  // Use validated latitude
         parseInt(chemical_id),
         release_type,
         release_rate || null,
@@ -204,12 +225,21 @@ class DispersionService {
         });
       }
 
+      // Prepare release data for ALOHA service
+      const alohaReleaseData = {
+        ...releaseEvent,
+        chemical: chemical,
+        location: {
+          latitude: releaseEvent.latitude,
+          longitude: releaseEvent.longitude
+        },
+        source_strength: sourceStrength
+      };
+
       // Perform dispersion calculation using ALOHA service
       const dispersionResult = await this.alohaService.calculateDispersion(
-        releaseEvent,
-        weatherData,
-        chemical,
-        sourceStrength
+        alohaReleaseData,
+        weatherData
       );
 
       // Calculate threat zones using ALOHA contours
@@ -224,6 +254,15 @@ class DispersionService {
       // Get receptor impacts from ALOHA results
       const receptorImpacts = dispersionResult.receptorImpacts;
 
+      const enhancedModelParameters = {
+        ...dispersionResult.modelParameters,
+        source_strength: sourceStrength,
+        threat_zones: threatZones,
+        max_concentration_analysis: maxConcentrationAnalysis,
+        aloha_compliant: true,
+        aloha_version: '5.4.4_compatible'
+      };
+
       // Store calculation results with enhanced data
       const insertQuery = `
         INSERT INTO dispersion_calculations (
@@ -234,20 +273,11 @@ class DispersionService {
         RETURNING id
       `;
 
-      const enhancedModelParameters = {
-        ...dispersionResult.modelParameters,
-        source_strength: sourceStrength,
-        threat_zones: threatZones,
-        max_concentration_analysis: maxConcentrationAnalysis,
-        aloha_compliant: true,
-        aloha_version: '5.4.4_compatible'
-      };
-
       const values = [
         releaseEventId,
         new Date(),
-        dispersionResult.plumeGeometry,
-        maxConcentrationAnalysis.upper_bound, // Use upper bound for conservative estimate
+        dispersionResult.plumeGeometry, // Now just a JSON string
+        dispersionResult.maxConcentration, // Use actual max concentration, not upper bound
         dispersionResult.affectedArea,
         dispersionResult.modelType || 'aloha_gaussian_plume',
         JSON.stringify(weatherData),

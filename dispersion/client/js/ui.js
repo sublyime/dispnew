@@ -31,12 +31,50 @@ class UIManager {
         }
 
         // Receptor button
-        const newReceptorBtn = document.getElementById('newReceptorBtn');
-        if (newReceptorBtn) {
-            newReceptorBtn.addEventListener('click', () => {
+        const addReceptorBtn = document.getElementById('addReceptorBtn');
+        if (addReceptorBtn) {
+            console.log('Add receptor button found and event listener added');
+            addReceptorBtn.addEventListener('click', () => {
+                console.log('Add receptor button clicked!');
                 this.startReceptorMode();
             });
+        } else {
+            console.error('Add receptor button not found!');
         }
+
+        // Map control buttons
+        const toggleLayersBtn = document.getElementById('toggleLayersBtn');
+        if (toggleLayersBtn) {
+            toggleLayersBtn.addEventListener('click', () => {
+                this.toggleLayersPanel();
+            });
+        }
+
+        const measureBtn = document.getElementById('measureBtn');
+        if (measureBtn) {
+            measureBtn.addEventListener('click', () => {
+                this.toggleMeasurementTool();
+            });
+        }
+
+        const uploadGISBtn = document.getElementById('uploadGISBtn');
+        if (uploadGISBtn) {
+            uploadGISBtn.addEventListener('click', () => {
+                this.showGISUploadDialog();
+            });
+        }
+
+        // Layer checkboxes
+        const layerCheckboxes = ['buildingsLayer', 'topographyLayer', 'receptorsLayer', 'windLayer'];
+        layerCheckboxes.forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    const layerName = id.replace('Layer', ''); // Remove 'Layer' suffix
+                    window.MapManager.toggleLayer(layerName, e.target.checked);
+                });
+            }
+        });
 
         // Release form submission
         const releaseForm = document.getElementById('releaseForm');
@@ -56,17 +94,38 @@ class UIManager {
             });
         }
 
+        // Select location button
+        const selectLocationBtn = document.getElementById('selectLocationBtn');
+        if (selectLocationBtn) {
+            selectLocationBtn.addEventListener('click', () => {
+                this.startLocationSelection();
+            });
+        }
+
         // Close modal buttons
-        document.querySelectorAll('.close').forEach(button => {
+        document.querySelectorAll('.modal-close').forEach(button => {
             button.addEventListener('click', (e) => {
-                this.closeModal(e.target.closest('.modal'));
+                const modal = e.target.closest('.modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.remove('location-selection');
+                    // Reset draw mode if closing receptor modal
+                    if (modal.id === 'receptorModal') {
+                        window.MapManager.setDrawMode(null);
+                    }
+                }
             });
         });
 
         // Close modals on outside click
         window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                this.closeModal(e.target);
+            if (e.target.classList.contains('modal') && !e.target.classList.contains('location-selection')) {
+                e.target.style.display = 'none';
+                e.target.classList.remove('location-selection');
+                // Reset draw mode
+                if (e.target.id === 'receptorModal') {
+                    window.MapManager.setDrawMode(null);
+                }
             }
         });
 
@@ -141,8 +200,54 @@ class UIManager {
      * Start receptor mode
      */
     startReceptorMode() {
-        window.MapManager.setDrawMode('receptor');
         this.showReceptorModal();
+    }
+
+    /**
+     * Start location selection for receptor
+     */
+    startLocationSelection() {
+        console.log('Starting location selection for receptor');
+        
+        const modal = document.getElementById('receptorModal');
+        if (modal) {
+            // Add location selection class to allow map clicks through
+            modal.classList.add('location-selection');
+            console.log('Added location-selection class to modal');
+        }
+        
+        // Enable receptor drawing mode
+        console.log('Setting draw mode to receptor');
+        window.MapManager.setDrawMode('receptor');
+        console.log('Draw mode set to:', window.MapManager.drawMode);
+        
+        // Set flag for location selection
+        this.isSelectingLocation = true;
+        
+        // Show instruction toast
+        this.showToast('Click on the map to set receptor location', 'info');
+    }
+
+    /**
+     * Handle location selection completion
+     */
+    handleLocationSelected() {
+        console.log('Location selected, cleaning up');
+        
+        // Remove location selection class
+        const modal = document.getElementById('receptorModal');
+        if (modal) {
+            modal.classList.remove('location-selection');
+        }
+        
+        // Disable drawing mode
+        window.MapManager.setDrawMode(null);
+        
+        // Clear flag
+        this.isSelectingLocation = false;
+        
+        // Show success message
+        this.showToast('Location selected! Complete the form and submit.', 'success');
     }
 
     /**
@@ -168,6 +273,7 @@ class UIManager {
     closeModal(modal) {
         if (modal) {
             modal.classList.remove('show');
+            modal.classList.remove('location-selection');
         }
         window.MapManager.setDrawMode(null);
     }
@@ -202,8 +308,16 @@ class UIManager {
         try {
             const location = window.MapManager.selectedLocation;
             
+            console.log('Location from MapManager:', location);
+            
             if (!location) {
                 this.showToast('Please select a location on the map', 'error');
+                return;
+            }
+
+            if (!location.lat || !location.lng || isNaN(location.lat) || isNaN(location.lng)) {
+                console.error('Invalid location coordinates:', location);
+                this.showToast('Invalid location coordinates', 'error');
                 return;
             }
 
@@ -232,11 +346,11 @@ class UIManager {
                 latitude: location.lat,
                 longitude: location.lng,
                 release_type: releaseTypeSelect.value,
-                release_rate: releaseRateInput.value ? parseFloat(releaseRateInput.value) : null,
-                total_mass: totalMassInput.value ? parseFloat(totalMassInput.value) : null,
+                release_rate: releaseRateInput.value ? parseFloat(releaseRateInput.value) : (releaseTypeSelect.value === 'continuous' ? 0.1 : null),
+                total_mass: totalMassInput.value ? parseFloat(totalMassInput.value) : (releaseTypeSelect.value !== 'continuous' ? 100 : null),
                 release_height: releaseHeightInput.value ? parseFloat(releaseHeightInput.value) : 1.0,
                 temperature: temperatureInput.value ? parseFloat(temperatureInput.value) : null,
-                duration: durationInput.value ? parseFloat(durationInput.value) : null,
+                duration: durationInput.value ? parseFloat(durationInput.value) : (releaseTypeSelect.value === 'continuous' ? 3600 : 60),
                 created_by: 'user'
             };
 
@@ -484,7 +598,7 @@ class UIManager {
     async stopRelease(releaseId) {
         if (confirm('Are you sure you want to stop this release?')) {
             try {
-                await API.updateReleaseStatus(releaseId, 'stopped');
+                await API.updateReleaseStatus(releaseId, 'completed');
                 this.showToast('Release stopped', 'success');
             } catch (error) {
                 console.error('Error stopping release:', error);
@@ -822,6 +936,153 @@ class UIManager {
         if (progressSection) progressSection.classList.add('hidden');
         
         this.selectedFiles = [];
+    }
+
+    /**
+     * Toggle layers panel visibility
+     */
+    toggleLayersPanel() {
+        const layersPanel = document.getElementById('layersPanel');
+        if (layersPanel) {
+            layersPanel.classList.toggle('hidden');
+        }
+    }
+
+    /**
+     * Toggle measurement tool
+     */
+    toggleMeasurementTool() {
+        if (window.MapManager) {
+            window.MapManager.toggleMeasurementTool();
+        }
+    }
+
+    /**
+     * Show GIS upload dialog
+     */
+    showGISUploadDialog() {
+        const uploadModal = document.getElementById('uploadModal');
+        if (uploadModal) {
+            uploadModal.style.display = 'flex';
+        }
+    }
+
+    /**
+     * Create a new receptor
+     */
+    async createReceptor() {
+        try {
+            const formData = {
+                name: document.getElementById('receptorName').value,
+                type: document.getElementById('receptorType').value,
+                height: parseFloat(document.getElementById('receptorHeight').value),
+                sensitivity_level: document.getElementById('sensitivityLevel').value,
+                population: parseInt(document.getElementById('population').value),
+                latitude: parseFloat(document.getElementById('receptorLat').value),
+                longitude: parseFloat(document.getElementById('receptorLon').value)
+            };
+
+            const response = await API.createReceptor(formData);
+            if (response.success) {
+                this.showToast('Receptor created successfully', 'success');
+                this.closeModal('receptorModal');
+                this.loadReceptors();
+                document.getElementById('receptorForm').reset();
+            }
+        } catch (error) {
+            console.error('Error creating receptor:', error);
+            this.showToast('Error creating receptor', 'error');
+        }
+    }
+
+    /**
+     * Load all receptors
+     */
+    async loadReceptors() {
+        try {
+            const response = await API.getReceptors();
+            const receptors = response.receptors || response; // Handle both response formats
+            this.displayReceptors(receptors);
+            if (window.MapManager) {
+                window.MapManager.displayReceptors(receptors);
+            }
+        } catch (error) {
+            console.error('Error loading receptors:', error);
+        }
+    }
+
+    /**
+     * Display receptors in the sidebar
+     */
+    displayReceptors(receptors) {
+        const receptorsList = document.getElementById('receptorsList');
+        if (!receptorsList) return;
+
+        // Ensure receptors is an array
+        if (!Array.isArray(receptors) || receptors.length === 0) {
+            receptorsList.innerHTML = '<p class="no-data">No receptors defined</p>';
+            return;
+        }
+
+        const receptorsHTML = receptors.map(receptor => `
+            <div class="receptor-item">
+                <div class="receptor-info">
+                    <h4>${receptor.name || 'Unnamed Receptor'}</h4>
+                    <p>Type: ${receptor.receptor_type || 'Unknown'}</p>
+                    <p>Population: ${receptor.population || 'N/A'}</p>
+                    <p>Sensitivity: ${receptor.sensitivity_level || 'N/A'}</p>
+                </div>
+                <div class="receptor-actions">
+                    <button class="btn btn-sm receptor-edit-btn" data-receptor-id="${receptor.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger receptor-delete-btn" data-receptor-id="${receptor.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        receptorsList.innerHTML = receptorsHTML;
+    }
+
+    /**
+     * Edit receptor
+     */
+    async editReceptor(receptorId) {
+        try {
+            const receptor = await API.getReceptor(receptorId);
+            // Populate form with receptor data
+            document.getElementById('receptorName').value = receptor.name;
+            document.getElementById('receptorType').value = receptor.receptor_type;
+            document.getElementById('receptorHeight').value = receptor.height;
+            document.getElementById('sensitivityLevel').value = receptor.sensitivity_level;
+            document.getElementById('population').value = receptor.population;
+            document.getElementById('receptorLat').value = receptor.latitude;
+            document.getElementById('receptorLon').value = receptor.longitude;
+            
+            // Show modal
+            document.getElementById('receptorModal').style.display = 'flex';
+        } catch (error) {
+            console.error('Error loading receptor:', error);
+            this.showToast('Error loading receptor data', 'error');
+        }
+    }
+
+    /**
+     * Delete receptor
+     */
+    async deleteReceptor(receptorId) {
+        if (confirm('Are you sure you want to delete this receptor?')) {
+            try {
+                await API.deleteReceptor(receptorId);
+                this.showToast('Receptor deleted successfully', 'success');
+                this.loadReceptors();
+            } catch (error) {
+                console.error('Error deleting receptor:', error);
+                this.showToast('Error deleting receptor', 'error');
+            }
+        }
     }
 }
 

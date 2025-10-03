@@ -88,8 +88,8 @@ class App {
     setupWeatherDrivenUpdates() {
         // Listen for weather updates and recalculate plumes
         if (window.WebSocketManager) {
-            window.WebSocketManager.addEventListener('weather-update', (weather) => {
-                this.handleWeatherUpdate(weather);
+            window.WebSocketManager.addEventListener('weather-update', (event) => {
+                this.handleWeatherUpdate(event.detail);
             });
         }
     }
@@ -255,8 +255,9 @@ class App {
      */
     async loadReceptors() {
         try {
-            const bounds = window.MapManager.getCurrentBounds();
-            await window.MapManager.loadReceptors(bounds);
+            if (window.UI) {
+                await window.UI.loadReceptors();
+            }
         } catch (error) {
             console.error('Error loading receptors:', error);
         }

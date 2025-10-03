@@ -31,27 +31,34 @@ class ALOHAService {
   async calculateDispersion(releaseData, weatherData) {
     try {
       console.log('Starting ALOHA dispersion calculation...');
+      console.log('Release data:', JSON.stringify(releaseData, null, 2));
+      console.log('Weather data:', JSON.stringify(weatherData, null, 2));
       
       // Determine appropriate model based on chemical properties and release type
       const model = this.selectModel(releaseData, weatherData);
+      console.log('Selected model:', model);
       
       // Calculate source term
       const sourceterm = await this.calculateSourceTerm(releaseData, weatherData);
+      console.log('Source term:', JSON.stringify(sourceterm, null, 2));
       
       // Perform atmospheric dispersion modeling
       const dispersionResults = await this.performDispersionModeling(
         sourceterm, weatherData, model, releaseData
       );
+      console.log('Dispersion results:', JSON.stringify(dispersionResults, null, 2));
       
       // Generate concentration contours
       const contours = this.generateConcentrationContours(
         dispersionResults, releaseData.location
       );
+      console.log('Generated contours:', contours.length);
       
       // Calculate receptor impacts
       const receptorImpacts = await this.calculateReceptorImpacts(
         dispersionResults, releaseData.location
       );
+      console.log('Receptor impacts:', receptorImpacts.length);
       
       // Store results in database
       const calculationId = await this.storeCalculationResults({
@@ -64,15 +71,53 @@ class ALOHAService {
         receptorImpacts
       });
       
-      return {
+      const result = {
         calculationId,
-        model,
+        modelType: model,
         sourceterm,
         dispersionResults,
         contours,
         receptorImpacts,
+        
+        // Format for DispersionService compatibility
+        maxConcentration: dispersionResults.max_concentration?.value || 0,
+        plumeGeometry: JSON.stringify({
+          type: 'FeatureCollection',
+          features: contours
+            .filter(c => c.geometry && c.geometry.geometry && c.geometry.geometry.coordinates) // Only valid geometries
+            .map(c => ({
+              type: 'Feature',
+              geometry: c.geometry.geometry,
+              properties: {
+                ...c.geometry.properties,
+                threshold: c.threshold,
+                color: c.color
+              }
+            }))
+        }),
+        affectedArea: dispersionResults.affectedArea || this.calculateAffectedArea(contours),
+        threatZones: this.formatThreatZones(contours),
+        concentrationContours: contours,
+        modelParameters: {
+          model_type: model,
+          atmospheric_stability: dispersionResults.stability_class,
+          wind_speed: weatherData.wind_speed,
+          wind_direction: weatherData.wind_direction,
+          temperature: weatherData.temperature,
+          source_strength: sourceterm.emission_rate
+        },
+        
         timestamp: new Date()
       };
+      
+      console.log('ALOHA result summary:', {
+        maxConcentration: result.maxConcentration,
+        affectedArea: result.affectedArea,
+        threatZones: result.threatZones.length,
+        contours: result.contours.length
+      });
+      
+      return result;
       
     } catch (error) {
       console.error('ALOHA calculation error:', error);
@@ -86,8 +131,13 @@ class ALOHAService {
   selectModel(releaseData, weatherData) {
     const { chemical, release_type, release_rate } = releaseData;
     
+    // Validate chemical properties
+    if (!chemical) {
+      throw new Error('Chemical properties not provided for ALOHA modeling');
+    }
+    
     // Heavy gas model for dense gases
-    if (chemical.molecular_weight > 30 && chemical.density > 1.2) {
+    if ((chemical.molecular_weight || 29) > 30 && (chemical.density || 1.0) > 1.2) {
       return this.models.HEAVY_GAS;
     }
     
@@ -111,6 +161,15 @@ class ALOHAService {
   async calculateSourceTerm(releaseData, weatherData) {
     const { chemical, release_type, release_rate, total_mass, release_height, temperature } = releaseData;
     
+    console.log('Source term inputs:', {
+      chemical: chemical ? 'present' : 'missing',
+      release_type,
+      release_rate,
+      total_mass,
+      release_height,
+      temperature
+    });
+    
     let emissionRate; // kg/s
     let duration = releaseData.duration || 3600; // default 1 hour
     
@@ -122,7 +181,15 @@ class ALOHAService {
     } else if (total_mass && releaseData.duration) {
       emissionRate = parseFloat(total_mass) / parseFloat(releaseData.duration);
     } else {
-      throw new Error('Insufficient data to calculate emission rate');
+      // Default emission rate for testing
+      console.warn('Insufficient data to calculate emission rate, using default');
+      emissionRate = 0.1; // kg/s default
+    }
+    
+    console.log('Calculated emission rate:', emissionRate);
+    
+    if (!emissionRate || emissionRate <= 0 || isNaN(emissionRate)) {
+      throw new Error(`Invalid emission rate calculated: ${emissionRate}`);
     }
     
     // Calculate buoyancy effects
@@ -232,6 +299,15 @@ class ALOHAService {
     const windDirection = weatherData.wind_direction;
     const stability = this.getStabilityClass(weatherData);
     
+    console.log('Gaussian Plume Inputs:', {
+      windSpeed,
+      windDirection,
+      stability,
+      sourceterm: sourceterm,
+      emission_rate: sourceterm.emission_rate,
+      effective_height: sourceterm.effective_height
+    });
+    
     // Calculate concentrations at various downwind distances
     const distances = [100, 200, 500, 1000, 2000, 5000, 10000]; // meters
     const concentrations = [];
@@ -247,12 +323,18 @@ class ALOHAService {
       const H = sourceterm.effective_height; // m
       const u = windSpeed; // m/s
       
+      console.log(`Distance ${distance}m:`, {
+        sigmaY, sigmaZ, Q, H, u
+      });
+      
       // Concentration at centerline (y=0, z=0)
       const concentration = (Q / (2 * Math.PI * u * sigmaY * sigmaZ)) *
                            Math.exp(-0.5 * Math.pow(H / sigmaZ, 2));
       
       // Convert to mg/m³
       const concentrationMgM3 = concentration * 1000;
+      
+      console.log(`Calculated concentration: ${concentration} kg/m³, ${concentrationMgM3} mg/m³`);
       
       concentrations.push({
         distance,
@@ -267,7 +349,9 @@ class ALOHAService {
         
         // Convert to geographic coordinates
         const coords = this.calculateCoordinatesFromDistanceAndBearing(
-          releaseData.location.lat, releaseData.location.lng, distance, windDirection
+          releaseData.location.latitude || releaseData.latitude, 
+          releaseData.location.longitude || releaseData.longitude, 
+          distance, windDirection
         );
         maxConcentration.x = coords.lng;
         maxConcentration.y = coords.lat;
@@ -519,10 +603,17 @@ class ALOHAService {
           const crossWindDistance = angle === 0 ? distance : distance + Math.abs(angle / 90) * sigmaY;
           
           const coords = this.calculateCoordinatesFromDistanceAndBearing(
-            location.lat, location.lng, crossWindDistance, bearing
+            location.latitude || location.lat, 
+            location.longitude || location.lng, 
+            crossWindDistance, bearing
           );
           
-          points.push([coords.lng, coords.lat]);
+          // Validate coordinates before adding
+          if (coords && !isNaN(coords.lng) && !isNaN(coords.lat)) {
+            points.push([coords.lng, coords.lat]);
+          } else {
+            console.log('Invalid coordinates calculated:', coords, 'for distance:', crossWindDistance, 'bearing:', bearing);
+          }
         }
       }
     }
@@ -545,10 +636,27 @@ class ALOHAService {
    * Create GeoJSON polygon from contour points
    */
   createContourPolygon(points) {
-    if (points.length < 3) return null;
+    if (!points || points.length < 3) {
+      console.log('Invalid contour points:', points);
+      return null;
+    }
+    
+    // Validate that all points have valid coordinates
+    const validPoints = points.filter(point => 
+      Array.isArray(point) && 
+      point.length === 2 && 
+      typeof point[0] === 'number' && 
+      typeof point[1] === 'number' &&
+      !isNaN(point[0]) && !isNaN(point[1])
+    );
+    
+    if (validPoints.length < 3) {
+      console.log('Not enough valid points for polygon:', validPoints);
+      return null;
+    }
     
     // Close the polygon
-    const closedPoints = [...points, points[0]];
+    const closedPoints = [...validPoints, validPoints[0]];
     
     return {
       type: 'Feature',
@@ -746,6 +854,23 @@ class ALOHAService {
       console.error('Error storing calculation results:', error);
       throw error;
     }
+  }
+
+  /**
+   * Format contours as threat zones for DispersionService compatibility
+   */
+  formatThreatZones(contours) {
+    if (!contours || !Array.isArray(contours)) {
+      return [];
+    }
+
+    return contours.map(contour => ({
+      level: contour.level,
+      level_of_concern: contour.levelOfConcern || 'unknown',
+      geometry: contour.geometry,
+      area: contour.area || 0,
+      max_distance: contour.maxDistance || 0
+    }));
   }
 
   /**

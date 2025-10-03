@@ -8,6 +8,10 @@ class MapManager {
         this.selectedLocation = null;
         this.drawMode = null;
         this.isInitialized = false;
+        this.measurementMode = false;
+        this.measurementPoints = [];
+        this.measurementControl = null;
+        this.receptorMode = false;
     }
 
     /**
@@ -110,10 +114,16 @@ class MapManager {
     handleMapClick(e) {
         const { lat, lng } = e.latlng;
         
+        console.log('Map clicked:', lat, lng, 'Draw mode:', this.drawMode);
+        
         if (this.drawMode === 'release') {
+            console.log('Handling as release location');
             this.selectReleaseLocation(lat, lng);
         } else if (this.drawMode === 'receptor') {
+            console.log('Handling as receptor location');
             this.selectReceptorLocation(lat, lng);
+        } else {
+            console.log('No draw mode set, ignoring click');
         }
     }
 
@@ -121,7 +131,11 @@ class MapManager {
      * Select release location
      */
     selectReleaseLocation(lat, lng) {
+        console.log('Selecting release location:', lat, lng);
+        
         this.selectedLocation = { lat, lng };
+        
+        console.log('Selected location set to:', this.selectedLocation);
         
         // Remove existing selection marker
         if (this.markers.selection) {
@@ -151,11 +165,18 @@ class MapManager {
      * Select receptor location
      */
     selectReceptorLocation(lat, lng) {
+        console.log('Selecting receptor location:', lat, lng);
+        
         // Update receptor form coordinates if elements exist
         const receptorLat = document.getElementById('receptorLat');
         const receptorLon = document.getElementById('receptorLon');
         if (receptorLat) receptorLat.value = lat.toFixed(6);
         if (receptorLon) receptorLon.value = lng.toFixed(6);
+        
+        // Call UI cleanup if it's in location selection mode
+        if (window.UI && window.UI.isSelectingLocation) {
+            window.UI.handleLocationSelected();
+        }
     }
 
     /**
@@ -173,6 +194,7 @@ class MapManager {
      * Set drawing mode
      */
     setDrawMode(mode) {
+        console.log('Setting draw mode from', this.drawMode, 'to', mode);
         this.drawMode = mode;
         
         // Update cursor
@@ -404,8 +426,11 @@ class MapManager {
         }
 
         console.log('Plume geometry:', calculation.plume_geometry);
+        console.log('Plume geometry type:', typeof calculation.plume_geometry);
+        console.log('Plume geometry structure:', JSON.stringify(calculation.plume_geometry, null, 2));
 
-        const plume = L.geoJSON(calculation.plume_geometry, {
+        try {
+          const plume = L.geoJSON(calculation.plume_geometry, {
             style: {
                 fillColor: '#ff6600',
                 weight: 2,
@@ -413,28 +438,32 @@ class MapManager {
                 color: '#ff3300',
                 fillOpacity: 0.3
             }
-        });
+          });
 
-        plume.bindPopup(`
-            <div class="plume-popup">
-                <h4>Chemical Plume</h4>
-                <p><strong>Model:</strong> ${calculation.calculation_method || 'Unknown'} (ALOHA ${calculation.model_parameters?.aloha_version || '5.4.4'} compatible)</p>
-                <p><strong>Max Concentration:</strong> ${Utils.formatConcentration(calculation.max_concentration)}</p>
-                <p><strong>Affected Area:</strong> ${Utils.formatDistance(Math.sqrt(calculation.affected_area))} radius</p>
-                <p><strong>Wind Speed:</strong> ${calculation.model_parameters?.wind_speed || 'N/A'} m/s</p>
-                <p><strong>Stability Class:</strong> ${calculation.model_parameters?.stability_class || 'N/A'}</p>
-                <p><strong>Calculation Time:</strong> ${Utils.formatDate(calculation.calculation_time)}</p>
-            </div>
-        `);
+          plume.bindPopup(`
+              <div class="plume-popup">
+                  <h4>Chemical Plume</h4>
+                  <p><strong>Model:</strong> ${calculation.calculation_method || 'Unknown'} (ALOHA ${calculation.model_parameters?.aloha_version || '5.4.4'} compatible)</p>
+                  <p><strong>Max Concentration:</strong> ${Utils.formatConcentration(calculation.max_concentration)}</p>
+                  <p><strong>Affected Area:</strong> ${Utils.formatDistance(Math.sqrt(calculation.affected_area))} radius</p>
+                  <p><strong>Wind Speed:</strong> ${calculation.model_parameters?.wind_speed || 'N/A'} m/s</p>
+                  <p><strong>Stability Class:</strong> ${calculation.model_parameters?.stability_class || 'N/A'}</p>
+                  <p><strong>Calculation Time:</strong> ${Utils.formatDate(calculation.calculation_time)}</p>
+              </div>
+          `);
 
-        this.layers.plumes.addLayer(plume);
+          this.layers.plumes.addLayer(plume);
 
-        console.log('Plume added to map, fitting bounds');
-        
-        // Fit map to plume bounds
-        this.map.fitBounds(plume.getBounds(), { padding: [20, 20] });
-        
-        console.log('Plume display completed');
+          console.log('Plume added to map, fitting bounds');
+          
+          // Fit map to plume bounds
+          this.map.fitBounds(plume.getBounds(), { padding: [20, 20] });
+          
+          console.log('Plume display completed');
+        } catch (error) {
+          console.error('Error creating Leaflet GeoJSON:', error);
+          console.error('Invalid geometry data:', calculation.plume_geometry);
+        }
     }
 
     /**
@@ -868,6 +897,340 @@ class MapManager {
         this.map.on('click', (e) => {
             this.handleMapClick(e);
         });
+    }
+
+    /**
+     * Toggle measurement tool
+     */
+    toggleMeasurementTool() {
+        if (this.measurementMode) {
+            this.disableMeasurementTool();
+        } else {
+            this.enableMeasurementTool();
+        }
+    }
+
+    /**
+     * Enable measurement tool
+     */
+    enableMeasurementTool() {
+        this.measurementMode = true;
+        this.measurementPoints = [];
+        this.map.getContainer().style.cursor = 'crosshair';
+        
+        // Change click handler for measurement
+        this.map.off('click');
+        this.map.on('click', (e) => {
+            this.addMeasurementPoint(e.latlng);
+        });
+
+        // Show measurement controls
+        this.showMeasurementControls();
+    }
+
+    /**
+     * Disable measurement tool
+     */
+    disableMeasurementTool() {
+        this.measurementMode = false;
+        this.measurementPoints = [];
+        this.map.getContainer().style.cursor = '';
+        
+        // Clear measurement layers
+        if (this.layers.measurements) {
+            this.layers.measurements.clearLayers();
+        }
+
+        // Restore normal click handler
+        this.map.off('click');
+        this.map.on('click', (e) => {
+            this.handleMapClick(e);
+        });
+
+        this.hideMeasurementControls();
+    }
+
+    /**
+     * Add measurement point
+     */
+    addMeasurementPoint(latlng) {
+        this.measurementPoints.push(latlng);
+
+        // Add point marker
+        const marker = L.circleMarker(latlng, {
+            radius: 4,
+            fillColor: '#ff7800',
+            color: '#ff7800',
+            weight: 2,
+            fillOpacity: 0.8
+        }).addTo(this.layers.measurements);
+
+        // If we have more than one point, draw line and show distance
+        if (this.measurementPoints.length > 1) {
+            const line = L.polyline(this.measurementPoints, {
+                color: '#ff7800',
+                weight: 3,
+                opacity: 0.8
+            }).addTo(this.layers.measurements);
+
+            // Calculate total distance
+            const totalDistance = this.calculateDistance();
+            
+            // Show distance popup on the last point
+            marker.bindPopup(`Distance: ${totalDistance.toFixed(2)} km`).openPopup();
+        }
+
+        // Show current point coordinates
+        marker.bindTooltip(`${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`, {
+            permanent: false,
+            direction: 'top'
+        });
+    }
+
+    /**
+     * Calculate total distance of measurement
+     */
+    calculateDistance() {
+        if (this.measurementPoints.length < 2) return 0;
+        
+        let totalDistance = 0;
+        for (let i = 1; i < this.measurementPoints.length; i++) {
+            const prev = this.measurementPoints[i - 1];
+            const curr = this.measurementPoints[i];
+            totalDistance += prev.distanceTo(curr) / 1000; // Convert to km
+        }
+        return totalDistance;
+    }
+
+    /**
+     * Show measurement controls
+     */
+    showMeasurementControls() {
+        // Create measurement control if it doesn't exist
+        if (!this.measurementControl) {
+            this.measurementControl = L.control({ position: 'topright' });
+            this.measurementControl.onAdd = () => {
+                const div = L.DomUtil.create('div', 'measurement-controls');
+                div.innerHTML = `
+                    <button class="measurement-btn clear-btn">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                    <button class="measurement-btn done-btn">
+                        <i class="fas fa-times"></i> Done
+                    </button>
+                `;
+                
+                // Add event listeners instead of inline onclick
+                const clearBtn = div.querySelector('.clear-btn');
+                const doneBtn = div.querySelector('.done-btn');
+                
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => {
+                        this.clearMeasurement();
+                    });
+                }
+                
+                if (doneBtn) {
+                    doneBtn.addEventListener('click', () => {
+                        this.disableMeasurementTool();
+                    });
+                }
+                
+                return div;
+            };
+        }
+        this.measurementControl.addTo(this.map);
+    }
+
+    /**
+     * Hide measurement controls
+     */
+    hideMeasurementControls() {
+        if (this.measurementControl) {
+            this.map.removeControl(this.measurementControl);
+        }
+    }
+
+    /**
+     * Clear measurement
+     */
+    clearMeasurement() {
+        this.measurementPoints = [];
+        if (this.layers.measurements) {
+            this.layers.measurements.clearLayers();
+        }
+    }
+
+    /**
+     * Enter receptor placement mode
+     */
+    enterReceptorMode() {
+        this.receptorMode = true;
+        this.map.getContainer().style.cursor = 'crosshair';
+        
+        // Change click handler for receptor placement
+        this.map.off('click');
+        this.map.on('click', (e) => {
+            this.placeReceptor(e.latlng);
+        });
+    }
+
+    /**
+     * Place receptor at location
+     */
+    placeReceptor(latlng) {
+        // Exit receptor mode
+        this.receptorMode = false;
+        this.map.getContainer().style.cursor = '';
+        
+        // Restore normal click handler
+        this.map.off('click');
+        this.map.on('click', (e) => {
+            this.handleMapClick(e);
+        });
+
+        // Populate receptor form with coordinates
+        document.getElementById('receptorLat').value = latlng.lat.toFixed(6);
+        document.getElementById('receptorLon').value = latlng.lng.toFixed(6);
+        
+        // Show receptor modal
+        document.getElementById('receptorModal').style.display = 'flex';
+    }
+
+    /**
+     * Display receptors on map
+     */
+    displayReceptors(receptors) {
+        if (!this.layers.receptors) return;
+        
+        // Clear existing receptors
+        this.layers.receptors.clearLayers();
+
+        // Ensure receptors is an array
+        if (!Array.isArray(receptors) || receptors.length === 0) {
+            return;
+        }
+
+        receptors.forEach(receptor => {
+            // Ensure receptor has required coordinates
+            if (!receptor.latitude || !receptor.longitude) {
+                console.warn('Receptor missing coordinates:', receptor);
+                return;
+            }
+
+            const marker = L.marker([receptor.latitude, receptor.longitude], {
+                icon: L.divIcon({
+                    className: 'receptor-marker',
+                    html: `<i class="fas fa-users" style="color: ${this.getReceptorColor(receptor.sensitivity_level)}"></i>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            });
+
+            marker.bindPopup(`
+                <div class="receptor-popup">
+                    <h4>${receptor.name}</h4>
+                    <p><strong>Type:</strong> ${receptor.receptor_type}</p>
+                    <p><strong>Population:</strong> ${receptor.population || 'N/A'}</p>
+                    <p><strong>Sensitivity:</strong> ${receptor.sensitivity_level}</p>
+                    <p><strong>Height:</strong> ${receptor.height}m</p>
+                    <div class="popup-actions">
+                        <button class="btn btn-sm receptor-edit-btn" data-receptor-id="${receptor.id}">Edit</button>
+                        <button class="btn btn-sm btn-danger receptor-delete-btn" data-receptor-id="${receptor.id}">Delete</button>
+                    </div>
+                </div>
+            `);
+
+            marker.addTo(this.layers.receptors);
+        });
+    }
+
+    /**
+     * Get receptor color based on sensitivity
+     */
+    getReceptorColor(sensitivity) {
+        const colors = {
+            'low': '#28a745',
+            'medium': '#ffc107', 
+            'high': '#fd7e14',
+            'critical': '#dc3545'
+        };
+        return colors[sensitivity] || '#6c757d';
+    }
+
+    /**
+     * Toggle layer visibility
+     */
+    toggleLayer(layerName, visible) {
+        if (!this.layers[layerName]) {
+            console.warn(`Layer ${layerName} not found`);
+            return;
+        }
+
+        if (visible) {
+            this.layers[layerName].addTo(this.map);
+            
+            // Load layer data if needed
+            switch (layerName) {
+                case 'buildings':
+                    this.loadBuildingsLayer();
+                    break;
+                case 'topography':
+                    this.loadTopographyLayer();
+                    break;
+                case 'receptors':
+                    window.UI.loadReceptors();
+                    break;
+                case 'wind':
+                    this.loadWindLayer();
+                    break;
+            }
+        } else {
+            this.map.removeLayer(this.layers[layerName]);
+        }
+    }
+
+    /**
+     * Load wind layer
+     */
+    loadWindLayer() {
+        // This would connect to wind data service
+        console.log('Loading wind layer...');
+        // Implementation depends on wind data source
+    }
+
+    /**
+     * Load visible data based on current map bounds
+     */
+    loadVisibleData() {
+        const bounds = this.map.getBounds();
+        // Load GIS data for visible area
+        this.loadBuildingsForBounds(bounds);
+        this.loadTopographyForBounds(bounds);
+    }
+
+    /**
+     * Load buildings for specific bounds
+     */
+    async loadBuildingsForBounds(bounds) {
+        try {
+            // This would call the GIS API with bounds
+            console.log('Loading buildings for bounds:', bounds);
+        } catch (error) {
+            console.error('Error loading buildings:', error);
+        }
+    }
+
+    /**
+     * Load topography for specific bounds
+     */
+    async loadTopographyForBounds(bounds) {
+        try {
+            // This would call the GIS API with bounds
+            console.log('Loading topography for bounds:', bounds);
+        } catch (error) {
+            console.error('Error loading topography:', error);
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 // WebSocket client for real-time updates
 
-class WebSocketManager {
+class WebSocketManager extends EventTarget {
     constructor() {
+        super();
         this.socket = null;
         this.reconnectInterval = null;
         this.reconnectAttempts = 0;
@@ -102,6 +103,9 @@ class WebSocketManager {
      */
     handleWeatherUpdate(weather) {
         console.log('Weather update received:', weather);
+        
+        // Dispatch custom event
+        this.dispatchEvent(new CustomEvent('weather-update', { detail: weather }));
         
         // Update UI weather display
         if (window.UI && window.UI.isInitialized) {

@@ -223,7 +223,7 @@ class DatabaseService {
         id SERIAL PRIMARY KEY,
         release_event_id INTEGER REFERENCES release_events(id),
         calculation_time TIMESTAMP NOT NULL,
-        plume_geometry GEOMETRY(POLYGON, 4326),
+        plume_geometry TEXT, -- Changed from GEOMETRY to TEXT to store JSON
         max_concentration DECIMAL(15,6),
         affected_area DECIMAL(12,2),
         calculation_method VARCHAR(50),

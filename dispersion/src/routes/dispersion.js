@@ -302,7 +302,7 @@ router.get('/releases/:id/calculations', async (req, res) => {
     const query = `
       SELECT 
         id, calculation_time, 
-        ST_AsGeoJSON(plume_geometry) as plume_geometry,
+        plume_geometry,
         max_concentration, affected_area, calculation_method,
         meteorological_conditions, model_parameters, receptor_impacts
       FROM dispersion_calculations
@@ -348,7 +348,7 @@ router.get('/releases/:id/latest', async (req, res) => {
     const query = `
       SELECT 
         id, calculation_time, 
-        ST_AsGeoJSON(plume_geometry) as plume_geometry,
+        plume_geometry,
         max_concentration, affected_area, calculation_method,
         meteorological_conditions, model_parameters, receptor_impacts
       FROM dispersion_calculations

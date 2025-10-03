@@ -199,6 +199,31 @@ class ApiService {
         return this.get('/dispersion/release-types');
     }
 
+    // Receptor methods
+    async createReceptor(receptorData) {
+        return this.post('/receptors', receptorData);
+    }
+
+    async getReceptors() {
+        return this.get('/receptors');
+    }
+
+    async getReceptor(id) {
+        return this.get(`/receptors/${id}`);
+    }
+
+    async updateReceptor(id, receptorData) {
+        return this.put(`/receptors/${id}`, receptorData);
+    }
+
+    async deleteReceptor(id) {
+        return this.delete(`/receptors/${id}`);
+    }
+
+    async getActiveReceptors() {
+        return this.get('/receptors?active=true');
+    }
+
     // GIS API methods
     async uploadGISFile(file, importType, description = '') {
         const formData = new FormData();
