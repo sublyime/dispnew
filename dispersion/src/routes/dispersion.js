@@ -111,7 +111,7 @@ router.post('/release', async (req, res) => {
  */
 router.get('/releases', async (req, res) => {
   try {
-    const { status, limit = 50, offset = 0, bbox } = req.query;
+    const { status, limit = 50, offset = 0, bbox, start_date, end_date } = req.query;
 
     let query = `
       SELECT 
@@ -120,9 +120,12 @@ router.get('/releases', async (req, res) => {
         re.start_time, re.end_time, re.status, re.created_by, re.created_at,
         ST_X(re.location) as longitude, ST_Y(re.location) as latitude,
         c.name as chemical_name, c.cas_number, c.physical_state,
-        re.weather_conditions
+        re.weather_conditions,
+        COUNT(dc.id) as calculation_count,
+        MAX(dc.calculation_time) as last_calculation
       FROM release_events re
       JOIN chemicals c ON re.chemical_id = c.id
+      LEFT JOIN dispersion_calculations dc ON re.id = dc.release_event_id
       WHERE 1=1
     `;
     
@@ -136,6 +139,19 @@ router.get('/releases', async (req, res) => {
       params.push(status);
     }
 
+    // Add date range filter
+    if (start_date) {
+      paramCount++;
+      query += ` AND re.start_time >= $${paramCount}`;
+      params.push(start_date);
+    }
+
+    if (end_date) {
+      paramCount++;
+      query += ` AND re.start_time <= $${paramCount}`;
+      params.push(end_date);
+    }
+
     // Add bounding box filter
     if (bbox) {
       const bounds = bbox.split(',').map(Number);
@@ -147,30 +163,85 @@ router.get('/releases', async (req, res) => {
       }
     }
 
+    query += ` GROUP BY re.id, c.name, c.cas_number, c.physical_state`;
     query += ` ORDER BY re.created_at DESC`;
-    
-    // Add pagination
-    paramCount++;
-    query += ` LIMIT $${paramCount}`;
-    params.push(parseInt(limit));
-    
-    paramCount++;
-    query += ` OFFSET $${paramCount}`;
-    params.push(parseInt(offset));
+    query += ` LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+    params.push(parseInt(limit), parseInt(offset));
 
     const result = await DatabaseService.query(query, params);
+    
+    // Parse weather conditions
+    const releases = result.rows.map(row => ({
+      ...row,
+      weather_conditions: typeof row.weather_conditions === 'string' 
+        ? JSON.parse(row.weather_conditions) 
+        : row.weather_conditions
+    }));
 
     res.json({
       success: true,
-      releases: result.rows,
-      count: result.rows.length
+      releases,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: releases.length
+      }
     });
 
   } catch (error) {
     console.error('Error getting release events:', error);
-    res.status(500).json({
-      error: 'Failed to retrieve release events',
-      message: error.message
+    res.status(500).json({ 
+      error: 'Failed to get release events',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * GET /api/dispersion/releases/:id/calculations
+ * Get all dispersion calculations for a specific release
+ */
+router.get('/releases/:id/calculations', async (req, res) => {
+  try {
+    const releaseId = parseInt(req.params.id);
+    
+    const query = `
+      SELECT 
+        dc.*,
+        re.weather_conditions,
+        c.name as chemical_name
+      FROM dispersion_calculations dc
+      JOIN release_events re ON dc.release_event_id = re.id
+      JOIN chemicals c ON re.chemical_id = c.id
+      WHERE dc.release_event_id = $1
+      ORDER BY dc.calculation_time DESC
+    `;
+    
+    const result = await DatabaseService.query(query, [releaseId]);
+    
+    const calculations = result.rows.map(row => ({
+      ...row,
+      meteorological_conditions: typeof row.meteorological_conditions === 'string'
+        ? JSON.parse(row.meteorological_conditions)
+        : row.meteorological_conditions,
+      model_parameters: typeof row.model_parameters === 'string'
+        ? JSON.parse(row.model_parameters)
+        : row.model_parameters,
+      receptor_impacts: typeof row.receptor_impacts === 'string'
+        ? JSON.parse(row.receptor_impacts)
+        : row.receptor_impacts
+    }));
+
+    res.json({
+      success: true,
+      calculations
+    });
+
+  } catch (error) {
+    console.error('Error getting release calculations:', error);
+    res.status(500).json({ 
+      error: 'Failed to get release calculations',
+      message: error.message 
     });
   }
 });

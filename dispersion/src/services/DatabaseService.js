@@ -105,6 +105,7 @@ class DatabaseService {
       -- Chemicals table
       CREATE TABLE IF NOT EXISTS chemicals (
         id SERIAL PRIMARY KEY,
+        cameo_id VARCHAR(50) UNIQUE,
         name VARCHAR(255) NOT NULL UNIQUE,
         cas_number VARCHAR(20),
         molecular_weight DECIMAL(10,4),
@@ -119,6 +120,7 @@ class DatabaseService {
         physical_state VARCHAR(20),
         toxicity_data JSONB,
         safety_data JSONB,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

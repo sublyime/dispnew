@@ -639,6 +639,236 @@ class MapManager {
             console.error('Error loading topography layer:', error);
         }
     }
+
+    /**
+     * Update or create downwind corridor visualization
+     */
+    updateDownwindCorridor(weather) {
+        if (!weather || !weather.wind_direction || !weather.wind_speed) {
+            // Remove existing corridor if no wind data
+            if (this.layers.downwindCorridor) {
+                this.map.removeLayer(this.layers.downwindCorridor);
+                delete this.layers.downwindCorridor;
+            }
+            return;
+        }
+
+        // Remove existing corridor
+        if (this.layers.downwindCorridor) {
+            this.map.removeLayer(this.layers.downwindCorridor);
+        }
+
+        // Create downwind corridor from map center
+        const center = this.map.getCenter();
+        const corridor = this.createDownwindCorridor(center, weather);
+        
+        this.layers.downwindCorridor = L.geoJSON(corridor, {
+            style: {
+                color: '#FF6B6B',
+                weight: 2,
+                opacity: 0.7,
+                fillColor: '#FF6B6B',
+                fillOpacity: 0.2,
+                dashArray: '5, 5'
+            }
+        }).addTo(this.map);
+
+        // Add wind arrow at center
+        this.updateWindArrow(center, weather);
+    }
+
+    /**
+     * Create downwind corridor geometry
+     */
+    createDownwindCorridor(center, weather) {
+        const windDirection = weather.wind_direction;
+        const windSpeed = weather.wind_speed;
+        
+        // Corridor parameters based on wind speed
+        const corridorLength = Math.max(5000, windSpeed * 1000); // meters
+        const corridorWidth = Math.max(1000, windSpeed * 200); // meters
+        
+        // Convert wind direction (meteorological) to mathematical bearing
+        const bearing = (windDirection + 180) % 360; // Wind "to" direction
+        
+        // Calculate corridor points
+        const startPoint = [center.lat, center.lng];
+        const endPoint = this.calculateDestination(center.lat, center.lng, bearing, corridorLength);
+        
+        // Create corridor polygon (simplified as a rectangle)
+        const perpBearing1 = (bearing + 90) % 360;
+        const perpBearing2 = (bearing - 90) % 360;
+        
+        const halfWidth = corridorWidth / 2;
+        
+        const corner1 = this.calculateDestination(center.lat, center.lng, perpBearing1, halfWidth);
+        const corner2 = this.calculateDestination(center.lat, center.lng, perpBearing2, halfWidth);
+        const corner3 = this.calculateDestination(endPoint[0], endPoint[1], perpBearing2, halfWidth);
+        const corner4 = this.calculateDestination(endPoint[0], endPoint[1], perpBearing1, halfWidth);
+        
+        return {
+            type: "Feature",
+            geometry: {
+                type: "Polygon",
+                coordinates: [[
+                    [corner1[1], corner1[0]],
+                    [corner2[1], corner2[0]], 
+                    [corner3[1], corner3[0]],
+                    [corner4[1], corner4[0]],
+                    [corner1[1], corner1[0]]
+                ]]
+            },
+            properties: {
+                name: "Downwind Corridor",
+                windDirection: windDirection,
+                windSpeed: windSpeed,
+                length: corridorLength,
+                width: corridorWidth
+            }
+        };
+    }
+
+    /**
+     * Calculate destination point from bearing and distance
+     */
+    calculateDestination(lat, lon, bearing, distance) {
+        const R = 6371000; // Earth's radius in meters
+        const bearingRad = bearing * (Math.PI / 180);
+        const latRad = lat * (Math.PI / 180);
+        const lonRad = lon * (Math.PI / 180);
+        
+        const destLatRad = Math.asin(
+            Math.sin(latRad) * Math.cos(distance / R) +
+            Math.cos(latRad) * Math.sin(distance / R) * Math.cos(bearingRad)
+        );
+        
+        const destLonRad = lonRad + Math.atan2(
+            Math.sin(bearingRad) * Math.sin(distance / R) * Math.cos(latRad),
+            Math.cos(distance / R) - Math.sin(latRad) * Math.sin(destLatRad)
+        );
+        
+        return [destLatRad * (180 / Math.PI), destLonRad * (180 / Math.PI)];
+    }
+
+    /**
+     * Update wind arrow visualization
+     */
+    updateWindArrow(center, weather) {
+        // Remove existing wind arrow
+        if (this.markers.windArrow) {
+            this.map.removeLayer(this.markers.windArrow);
+        }
+
+        const windDirection = weather.wind_direction;
+        const windSpeed = weather.wind_speed;
+        
+        // Create wind arrow icon
+        const arrowIcon = L.divIcon({
+            className: 'wind-arrow',
+            html: `<div style="transform: rotate(${windDirection}deg); color: #FF6B6B; font-size: 24px;">
+                     <i class="fas fa-long-arrow-alt-up"></i>
+                   </div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        this.markers.windArrow = L.marker([center.lat, center.lng], {
+            icon: arrowIcon,
+            zIndexOffset: 1000
+        }).bindTooltip(`Wind: ${windSpeed.toFixed(1)} m/s from ${windDirection.toFixed(0)}°`, {
+            permanent: false,
+            direction: 'top'
+        }).addTo(this.map);
+    }
+
+    /**
+     * Enhanced map click handler for weather-driven modeling
+     */
+    async handleMapClickForModeling(e) {
+        const { lat, lng } = e.latlng;
+        
+        try {
+            // Show loading indicator
+            const loadingIndicator = this.showLoadingIndicator('Fetching weather data...');
+            
+            // Fetch weather data for clicked location
+            const weatherResponse = await API.getCurrentWeather(lat, lng);
+            const weather = weatherResponse.weather;
+            
+            // Update weather display
+            if (window.UI && weather) {
+                window.UI.updateWeatherDisplay(weather);
+            }
+            
+            // Update downwind corridor for this location
+            this.updateDownwindCorridor(weather);
+            
+            // Set up release location
+            this.selectReleaseLocation(lat, lng);
+            
+            // Pre-populate weather data in release form
+            this.prePopulateWeatherData(weather);
+            
+            loadingIndicator.remove();
+            
+        } catch (error) {
+            console.error('Error fetching weather for modeling:', error);
+            // Still allow modeling with default weather
+            this.selectReleaseLocation(lat, lng);
+        }
+    }
+
+    /**
+     * Show loading indicator
+     */
+    showLoadingIndicator(message) {
+        const indicator = L.marker([this.map.getCenter().lat, this.map.getCenter().lng], {
+            icon: L.divIcon({
+                className: 'loading-indicator',
+                html: `<div class="spinner"></div><span>${message}</span>`,
+                iconSize: [200, 50]
+            }),
+            zIndexOffset: 2000
+        }).addTo(this.map);
+        
+        return indicator;
+    }
+
+    /**
+     * Pre-populate weather data in release form
+     */
+    prePopulateWeatherData(weather) {
+        // This will be used when the release form is shown
+        this.lastWeatherData = weather;
+    }
+
+    /**
+     * Enable click-to-model mode
+     */
+    enableClickToModel() {
+        this.drawMode = 'release';
+        this.map.getContainer().style.cursor = 'crosshair';
+        
+        // Override the click handler for weather-driven modeling
+        this.map.off('click');
+        this.map.on('click', (e) => {
+            this.handleMapClickForModeling(e);
+        });
+    }
+
+    /**
+     * Disable click-to-model mode
+     */
+    disableClickToModel() {
+        this.drawMode = null;
+        this.map.getContainer().style.cursor = '';
+        
+        // Restore normal click handler
+        this.map.off('click');
+        this.map.on('click', (e) => {
+            this.handleMapClick(e);
+        });
+    }
 }
 
 // Create global map instance

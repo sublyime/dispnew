@@ -509,23 +509,61 @@ class UIManager {
             return;
         }
 
+        // Calculate wind direction text
+        const windDirectionText = this.getWindDirectionText(weather.wind_direction);
+        
         container.innerHTML = `
             <div class="weather-item">
-                <strong>Temperature:</strong> ${weather.temperature}°C
+                <strong>Temperature:</strong> ${weather.temperature ? weather.temperature.toFixed(1) : 'N/A'}°C
             </div>
             <div class="weather-item">
-                <strong>Wind Speed:</strong> ${weather.wind_speed} m/s
+                <strong>Wind Speed:</strong> ${weather.wind_speed ? weather.wind_speed.toFixed(1) : 'N/A'} m/s
             </div>
             <div class="weather-item">
-                <strong>Wind Direction:</strong> ${weather.wind_direction}°
+                <strong>Wind Direction:</strong> ${weather.wind_direction ? weather.wind_direction.toFixed(0) : 'N/A'}° (${windDirectionText})
             </div>
             <div class="weather-item">
-                <strong>Stability Class:</strong> ${weather.stability_class}
+                <strong>Humidity:</strong> ${weather.humidity ? weather.humidity.toFixed(0) : 'N/A'}%
+            </div>
+            <div class="weather-item">
+                <strong>Pressure:</strong> ${weather.pressure ? weather.pressure.toFixed(1) : 'N/A'} hPa
+            </div>
+            <div class="weather-item">
+                <strong>Stability Class:</strong> ${weather.atmospheric_stability || 'N/A'}
+            </div>
+            <div class="weather-item">
+                <strong>Mixing Height:</strong> ${weather.mixing_height ? weather.mixing_height.toFixed(0) : 'N/A'} m
             </div>
             <div class="weather-item">
                 <strong>Updated:</strong> ${Utils.formatDate(weather.timestamp)}
             </div>
         `;
+
+        // Update weather timestamp in header
+        const timestampElement = document.getElementById('weatherTimestamp');
+        if (timestampElement) {
+            timestampElement.textContent = `Last updated: ${Utils.formatTime(weather.timestamp)}`;
+        }
+
+        // Store current weather for dispersion modeling
+        this.currentWeather = weather;
+
+        // Update any visible downwind corridors
+        if (window.MapManager && window.MapManager.updateDownwindCorridor) {
+            window.MapManager.updateDownwindCorridor(weather);
+        }
+    }
+
+    /**
+     * Convert wind direction degrees to compass direction
+     */
+    getWindDirectionText(degrees) {
+        if (!degrees && degrees !== 0) return 'N/A';
+        
+        const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                           'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        const index = Math.round(degrees / 22.5) % 16;
+        return directions[index];
     }
 
     /**

@@ -61,6 +61,154 @@ class App {
 
         // Load initial data
         await this.loadInitialData();
+
+        // Set up enhanced modeling features
+        this.setupEnhancedModeling();
+    }
+
+    /**
+     * Set up enhanced modeling features
+     */
+    setupEnhancedModeling() {
+        // Enable click-to-model by default
+        if (window.MapManager) {
+            window.MapManager.enableClickToModel();
+        }
+
+        // Set up automatic weather updates with plume recalculation
+        this.setupWeatherDrivenUpdates();
+
+        // Set up real-time weather monitoring
+        this.setupRealTimeWeatherMonitoring();
+    }
+
+    /**
+     * Set up weather-driven plume updates
+     */
+    setupWeatherDrivenUpdates() {
+        // Listen for weather updates and recalculate plumes
+        if (window.WebSocketManager) {
+            window.WebSocketManager.addEventListener('weather-update', (weather) => {
+                this.handleWeatherUpdate(weather);
+            });
+        }
+    }
+
+    /**
+     * Set up real-time weather monitoring
+     */
+    setupRealTimeWeatherMonitoring() {
+        // Monitor weather changes and update visualizations
+        setInterval(async () => {
+            if (window.MapManager && window.MapManager.map) {
+                try {
+                    const center = window.MapManager.map.getCenter();
+                    const weather = await API.getCurrentWeather(center.lat, center.lng);
+                    
+                    if (weather && weather.weather) {
+                        // Update weather display
+                        if (window.UI) {
+                            window.UI.updateWeatherDisplay(weather.weather);
+                        }
+                        
+                        // Update downwind corridor
+                        if (window.MapManager.updateDownwindCorridor) {
+                            window.MapManager.updateDownwindCorridor(weather.weather);
+                        }
+                        
+                        // Recalculate active plumes if weather has changed significantly
+                        await this.updateActivePlumesIfNeeded(weather.weather);
+                    }
+                } catch (error) {
+                    console.warn('Weather monitoring update failed:', error);
+                }
+            }
+        }, 60000); // Check every minute
+    }
+
+    /**
+     * Handle weather updates
+     */
+    async handleWeatherUpdate(weather) {
+        if (!weather) return;
+
+        // Show real-time update indicator
+        this.showRealTimeIndicator('Weather Updated');
+
+        // Update weather display
+        if (window.UI) {
+            window.UI.updateWeatherDisplay(weather);
+        }
+
+        // Update downwind corridor
+        if (window.MapManager && window.MapManager.updateDownwindCorridor) {
+            window.MapManager.updateDownwindCorridor(weather);
+        }
+
+        // Recalculate active dispersion models
+        await this.recalculateActiveDispersions(weather);
+    }
+
+    /**
+     * Recalculate active dispersions with new weather
+     */
+    async recalculateActiveDispersions(weather) {
+        try {
+            const activeReleases = await API.getActiveReleases();
+            
+            for (const release of activeReleases.releases || []) {
+                // Trigger dispersion recalculation with new weather
+                await this.updateReleaseDispersion(release, weather);
+            }
+        } catch (error) {
+            console.error('Error recalculating dispersions:', error);
+        }
+    }
+
+    /**
+     * Update active plumes if weather has changed significantly
+     */
+    async updateActivePlumesIfNeeded(newWeather) {
+        if (!this.lastWeather) {
+            this.lastWeather = newWeather;
+            return;
+        }
+
+        // Check if wind direction or speed has changed significantly
+        const windDirChange = Math.abs(newWeather.wind_direction - this.lastWeather.wind_direction);
+        const windSpeedChange = Math.abs(newWeather.wind_speed - this.lastWeather.wind_speed);
+        
+        const significantChange = windDirChange > 15 || windSpeedChange > 2; // 15 degrees or 2 m/s
+        
+        if (significantChange) {
+            console.log('Significant weather change detected, updating plumes...');
+            await this.recalculateActiveDispersions(newWeather);
+            this.lastWeather = newWeather;
+        }
+    }
+
+    /**
+     * Show real-time update indicator
+     */
+    showRealTimeIndicator(message) {
+        // Remove existing indicator
+        const existing = document.querySelector('.real-time-indicator');
+        if (existing) {
+            existing.remove();
+        }
+
+        // Create new indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'real-time-indicator';
+        indicator.textContent = message;
+        document.body.appendChild(indicator);
+
+        // Remove after animation
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+            }
+        }, 3000);
     }
 
     /**

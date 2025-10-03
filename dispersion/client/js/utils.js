@@ -9,6 +9,14 @@ function formatDate(date) {
 }
 
 /**
+ * Format time to readable string
+ */
+function formatTime(date) {
+    const d = new Date(date);
+    return d.toLocaleTimeString();
+}
+
+/**
  * Format number with appropriate units
  */
 function formatNumber(number, decimals = 2) {
@@ -252,6 +260,7 @@ function pointInPolygon(point, polygon) {
  */
 window.Utils = {
     formatDate,
+    formatTime,
     formatNumber,
     formatConcentration,
     formatDistance,

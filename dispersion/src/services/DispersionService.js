@@ -2,6 +2,7 @@ const DatabaseService = require('./DatabaseService');
 const WeatherService = require('./WeatherService');
 const SourceStrengthService = require('./SourceStrengthService');
 const CameoChemicalsService = require('./CameoChemicalsService');
+const ALOHAService = require('./ALOHAService');
 
 class DispersionService {
   constructor(websocketServer) {
@@ -11,6 +12,7 @@ class DispersionService {
     this.intervalId = null;
     this.sourceStrengthService = new SourceStrengthService();
     this.cameoChemicalsService = new CameoChemicalsService();
+    this.alohaService = new ALOHAService(); // Add ALOHA integration
   }
 
   /**
@@ -202,39 +204,25 @@ class DispersionService {
         });
       }
 
-      // Perform dispersion calculation using enhanced Gaussian plume model
-      const dispersionResult = await this.gaussianPlumeModel(
+      // Perform dispersion calculation using ALOHA service
+      const dispersionResult = await this.alohaService.calculateDispersion(
         releaseEvent,
         weatherData,
-        chemical
+        chemical,
+        sourceStrength
       );
 
-      // Calculate threat zones for different Levels of Concern
-      const levelsOfConcern = [
-        10,    // AEGL-1 equivalent (μg/m³)
-        100,   // AEGL-2 equivalent
-        1000,  // AEGL-3 equivalent
-        10000  // IDLH equivalent
-      ];
+      // Calculate threat zones using ALOHA contours
+      const threatZones = dispersionResult.threatZones;
 
-      const threatZones = [];
-      for (const loc of levelsOfConcern) {
-        const zones = this.calculateThreatZones(dispersionResult.concentrations, dispersionResult.plumePoints, loc);
-        threatZones.push(...zones);
-      }
+      // Get maximum concentration from ALOHA results
+      const maxConcentrationAnalysis = {
+        estimated_max: dispersionResult.maxConcentration,
+        upper_bound: dispersionResult.maxConcentration * 1.5 // Conservative estimate
+      };
 
-      // Estimate maximum concentration with uncertainty bounds
-      const maxConcentrationAnalysis = this.estimateMaximumConcentration(
-        dispersionResult.concentrations, 
-        dispersionResult.modelParameters
-      );
-
-      // Get affected receptors
-      const receptorImpacts = await this.calculateReceptorImpacts(
-        releaseEvent,
-        dispersionResult,
-        chemical
-      );
+      // Get receptor impacts from ALOHA results
+      const receptorImpacts = dispersionResult.receptorImpacts;
 
       // Store calculation results with enhanced data
       const insertQuery = `
@@ -251,7 +239,8 @@ class DispersionService {
         source_strength: sourceStrength,
         threat_zones: threatZones,
         max_concentration_analysis: maxConcentrationAnalysis,
-        aloha_compliant: true
+        aloha_compliant: true,
+        aloha_version: '5.4.4_compatible'
       };
 
       const values = [
@@ -260,7 +249,7 @@ class DispersionService {
         dispersionResult.plumeGeometry,
         maxConcentrationAnalysis.upper_bound, // Use upper bound for conservative estimate
         dispersionResult.affectedArea,
-        dispersionResult.modelParameters.model_type || 'gaussian_plume',
+        dispersionResult.modelType || 'aloha_gaussian_plume',
         JSON.stringify(weatherData),
         JSON.stringify(enhancedModelParameters),
         JSON.stringify(receptorImpacts)
@@ -274,7 +263,7 @@ class DispersionService {
 
       return {
         calculation_id: calculationId,
-        plume_geometry: JSON.parse(dispersionResult.plumeGeometry),
+        plume_geometry: dispersionResult.plumeGeometry,
         max_concentration: maxConcentrationAnalysis.estimated_max,
         max_concentration_upper_bound: maxConcentrationAnalysis.upper_bound,
         affected_area: dispersionResult.affectedArea,
@@ -283,7 +272,8 @@ class DispersionService {
         source_strength: sourceStrength,
         model_parameters: enhancedModelParameters,
         calculation_time: new Date(),
-        aloha_version: '5.4.4_compatible'
+        aloha_version: '5.4.4_compatible',
+        concentration_contours: dispersionResult.concentrationContours
       };
 
     } catch (error) {
