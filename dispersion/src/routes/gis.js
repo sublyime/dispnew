@@ -37,38 +37,58 @@ const upload = multer({
  * POST /api/gis/upload
  * Upload and process GIS files
  */
-router.post('/upload', upload.single('gisFile'), async (req, res) => {
+router.post('/upload', upload.array('files', 10), async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
-        error: 'No file uploaded'
+        error: 'No files uploaded'
       });
     }
 
-    const { import_type, description } = req.body;
+    const { dataType } = req.body;
     
-    if (!import_type || !['buildings', 'topography', 'boundaries'].includes(import_type)) {
+    if (!dataType || !['buildings', 'topography', 'boundaries'].includes(dataType)) {
       return res.status(400).json({
-        error: 'Invalid import_type. Must be one of: buildings, topography, boundaries'
+        error: 'Invalid dataType. Must be one of: buildings, topography, boundaries'
       });
     }
 
-    // Process the uploaded file
+    // Process the uploaded files
     const gisService = new GISService();
-    const processingResult = await gisService.processGISFile(req.file, import_type, description);
+    let totalFeatures = 0;
+    const processedFiles = [];
+
+    for (const file of req.files) {
+      try {
+        const processingResult = await gisService.processGISFile(file, dataType, `Uploaded via web interface - ${file.originalname}`);
+        totalFeatures += processingResult.featuresCount || 0;
+        processedFiles.push({
+          filename: file.originalname,
+          status: 'success',
+          features: processingResult.featuresCount || 0
+        });
+      } catch (fileError) {
+        console.error(`Error processing file ${file.originalname}:`, fileError);
+        processedFiles.push({
+          filename: file.originalname,
+          status: 'error',
+          error: fileError.message
+        });
+      }
+    }
 
     res.json({
       success: true,
-      import_id: processingResult.importId,
-      message: 'File uploaded and processing started',
-      processing_status: processingResult.status,
-      features_detected: processingResult.featuresCount
+      message: `Processed ${req.files.length} files`,
+      featuresCount: totalFeatures,
+      processedFiles: processedFiles,
+      dataType: dataType
     });
 
   } catch (error) {
-    console.error('Error uploading GIS file:', error);
+    console.error('Error uploading GIS files:', error);
     res.status(500).json({
-      error: 'Failed to upload GIS file',
+      error: 'Failed to upload GIS files',
       message: error.message
     });
   }

@@ -13,6 +13,7 @@ class UIManager {
         this.setupEventListeners();
         this.setupModals();
         this.loadChemicals();
+        this.initGISUpload();
         this.isInitialized = true;
         console.log('UI initialized successfully');
     }
@@ -22,26 +23,38 @@ class UIManager {
      */
     setupEventListeners() {
         // Release button
-        document.getElementById('newReleaseBtn').addEventListener('click', () => {
-            this.startReleaseMode();
-        });
+        const newReleaseBtn = document.getElementById('newReleaseBtn');
+        if (newReleaseBtn) {
+            newReleaseBtn.addEventListener('click', () => {
+                this.startReleaseMode();
+            });
+        }
 
         // Receptor button
-        document.getElementById('newReceptorBtn').addEventListener('click', () => {
-            this.startReceptorMode();
-        });
+        const newReceptorBtn = document.getElementById('newReceptorBtn');
+        if (newReceptorBtn) {
+            newReceptorBtn.addEventListener('click', () => {
+                this.startReceptorMode();
+            });
+        }
 
         // Release form submission
-        document.getElementById('releaseForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.createRelease();
-        });
+        const releaseForm = document.getElementById('releaseForm');
+        if (releaseForm) {
+            releaseForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createRelease();
+            });
+        }
 
         // Receptor form submission
-        document.getElementById('receptorForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.createReceptor();
-        });
+        const receptorForm = document.getElementById('receptorForm');
+        if (receptorForm) {
+            receptorForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createReceptor();
+            });
+        }
 
         // Close modal buttons
         document.querySelectorAll('.close').forEach(button => {
@@ -66,8 +79,43 @@ class UIManager {
         });
 
         // Clear all button
-        document.getElementById('clearAllBtn').addEventListener('click', () => {
-            this.clearAll();
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', () => {
+                this.clearAll();
+            });
+        }
+
+        // Global event delegation for dynamically created popup buttons
+        document.addEventListener('click', (e) => {
+            // Receptor edit buttons
+            if (e.target.closest('.receptor-edit-btn')) {
+                const receptorId = e.target.closest('.receptor-edit-btn').dataset.receptorId;
+                this.editReceptor(parseInt(receptorId));
+            }
+            
+            // Receptor delete buttons
+            if (e.target.closest('.receptor-delete-btn')) {
+                const receptorId = e.target.closest('.receptor-delete-btn').dataset.receptorId;
+                this.deleteReceptor(parseInt(receptorId));
+            }
+            
+            // Release details buttons
+            if (e.target.closest('.release-details-btn')) {
+                const releaseId = e.target.closest('.release-details-btn').dataset.releaseId;
+                this.viewReleaseDetails(parseInt(releaseId));
+            }
+            
+            // Release stop buttons
+            if (e.target.closest('.release-stop-btn')) {
+                const releaseId = e.target.closest('.release-stop-btn').dataset.releaseId;
+                this.stopRelease(parseInt(releaseId));
+            }
+            
+            // Reload button in error dialog
+            if (e.target.closest('.reload-btn')) {
+                window.location.reload();
+            }
         });
     }
 
@@ -108,14 +156,19 @@ class UIManager {
      * Show receptor modal
      */
     showReceptorModal() {
-        document.getElementById('receptorModal').classList.add('show');
+        const modal = document.getElementById('receptorModal');
+        if (modal) {
+            modal.classList.add('show');
+        }
     }
 
     /**
      * Close modal
      */
     closeModal(modal) {
-        modal.classList.remove('show');
+        if (modal) {
+            modal.classList.remove('show');
+        }
         window.MapManager.setDrawMode(null);
     }
 
@@ -147,7 +200,6 @@ class UIManager {
      */
     async createRelease() {
         try {
-            const formData = new FormData(document.getElementById('releaseForm'));
             const location = window.MapManager.selectedLocation;
             
             if (!location) {
@@ -155,25 +207,47 @@ class UIManager {
                 return;
             }
 
+            // Get form values directly by ID since form elements don't have name attributes
+            const chemicalSelect = document.getElementById('chemicalSelect');
+            const releaseTypeSelect = document.getElementById('releaseType');
+            const releaseRateInput = document.getElementById('releaseRate');
+            const totalMassInput = document.getElementById('totalMass');
+            const releaseHeightInput = document.getElementById('releaseHeight');
+            const temperatureInput = document.getElementById('temperature');
+            const durationInput = document.getElementById('duration');
+
+            // Validate required fields
+            if (!chemicalSelect.value) {
+                this.showToast('Please select a chemical', 'error');
+                return;
+            }
+            
+            if (!releaseTypeSelect.value) {
+                this.showToast('Please select a release type', 'error');
+                return;
+            }
+
             const releaseData = {
-                chemical_id: parseInt(formData.get('chemical_id')),
+                chemical_id: parseInt(chemicalSelect.value),
                 latitude: location.lat,
                 longitude: location.lng,
-                release_type: formData.get('release_type'),
-                release_rate: parseFloat(formData.get('release_rate')),
-                duration: parseFloat(formData.get('duration')) || null,
-                start_time: new Date().toISOString(),
-                status: 'active'
+                release_type: releaseTypeSelect.value,
+                release_rate: releaseRateInput.value ? parseFloat(releaseRateInput.value) : null,
+                total_mass: totalMassInput.value ? parseFloat(totalMassInput.value) : null,
+                release_height: releaseHeightInput.value ? parseFloat(releaseHeightInput.value) : 1.0,
+                temperature: temperatureInput.value ? parseFloat(temperatureInput.value) : null,
+                duration: durationInput.value ? parseFloat(durationInput.value) : null,
+                created_by: 'user'
             };
 
             const response = await API.createRelease(releaseData);
-            this.currentRelease = response.release;
+            this.currentRelease = response.release_event;
 
             // Display on map
-            window.MapManager.displayRelease(response.release);
+            window.MapManager.displayRelease(response.release_event);
 
             // Start dispersion calculation
-            await this.startDispersionCalculation(response.release.id);
+            await this.startDispersionCalculation(response.release_event.id);
 
             this.closeModal(document.getElementById('releaseModal'));
             this.showToast('Release created successfully', 'success');
@@ -220,16 +294,28 @@ class UIManager {
      */
     async startDispersionCalculation(releaseId) {
         try {
-            const calculation = await API.calculateDispersion(releaseId);
+            // Wait a moment for the dispersion calculation to complete
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
-            if (calculation.plume_geometry) {
+            // Get the latest calculation for this release
+            const calculation = await API.getLatestCalculation(releaseId);
+            
+            if (calculation && calculation.plume_geometry) {
                 window.MapManager.displayPlume(calculation);
-                this.updateReceptorImpacts(calculation.receptor_impacts);
+                if (calculation.receptor_impacts) {
+                    this.updateReceptorImpacts(calculation.receptor_impacts);
+                }
+                // Update model information display
+                this.updateModelInformation(calculation);
+                this.showToast('Dispersion calculation completed', 'success');
+            } else {
+                console.warn('No dispersion calculation found for release', releaseId);
+                this.showToast('Dispersion calculation in progress...', 'info');
             }
 
         } catch (error) {
-            console.error('Error calculating dispersion:', error);
-            this.showToast('Error calculating dispersion', 'error');
+            console.error('Error getting dispersion calculation:', error);
+            this.showToast('Error retrieving dispersion calculation', 'error');
         }
     }
 
@@ -254,6 +340,58 @@ class UIManager {
         `).join('');
 
         container.innerHTML = html;
+    }
+
+    /**
+     * Update model information display
+     */
+    updateModelInformation(calculation) {
+        const container = document.getElementById('modelData');
+        const timestamp = document.getElementById('modelTimestamp');
+
+        if (!calculation || !calculation.model_parameters) {
+            container.innerHTML = '<p class="no-data">No dispersion calculation</p>';
+            timestamp.textContent = '';
+            return;
+        }
+
+        const params = calculation.model_parameters;
+        const html = `
+            <div class="model-info">
+                <div class="info-item">
+                    <strong>Model Type:</strong>
+                    <span class="model-type">${calculation.calculation_method || 'Unknown'}</span>
+                </div>
+                <div class="info-item">
+                    <strong>ALOHA Version:</strong>
+                    <span>${params.aloha_version || '5.4.4'} Compatible</span>
+                </div>
+                <div class="info-item">
+                    <strong>Stability Class:</strong>
+                    <span class="stability-${params.stability_class?.toLowerCase()}">${params.stability_class || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Wind Speed:</strong>
+                    <span>${params.wind_speed || 'N/A'} m/s</span>
+                </div>
+                <div class="info-item">
+                    <strong>Emission Rate:</strong>
+                    <span>${params.emission_rate || 'N/A'} kg/s</span>
+                </div>
+                <div class="info-item">
+                    <strong>Density Ratio:</strong>
+                    <span>${params.density_ratio ? params.density_ratio.toFixed(2) : 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Max Concentration:</strong>
+                    <span>${Utils.formatConcentration(calculation.max_concentration)}</span>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+        timestamp.textContent = calculation.calculation_time ? 
+            `Updated: ${Utils.formatDate(calculation.calculation_time)}` : '';
     }
 
     /**
@@ -339,10 +477,15 @@ class UIManager {
      * Update weather display
      */
     updateWeatherDisplay(weather) {
-        const container = document.getElementById('weatherInfo');
+        const container = document.getElementById('weatherData');
+        
+        if (!container) {
+            console.warn('Weather display container not found');
+            return;
+        }
         
         if (!weather) {
-            container.innerHTML = '<p>No weather data available</p>';
+            container.innerHTML = '<p class="no-data">No weather data available</p>';
             return;
         }
 
@@ -360,9 +503,267 @@ class UIManager {
                 <strong>Stability Class:</strong> ${weather.stability_class}
             </div>
             <div class="weather-item">
-                <strong>Updated:</strong> ${Utils.formatDate(weather.observation_time)}
+                <strong>Updated:</strong> ${Utils.formatDate(weather.timestamp)}
             </div>
         `;
+    }
+
+    /**
+     * Initialize GIS upload functionality
+     */
+    initGISUpload() {
+        const uploadBtn = document.getElementById('uploadGISBtn');
+        const modal = document.getElementById('gisUploadModal');
+        const fileInput = document.getElementById('gisFileInput');
+        const fileSelectLink = document.getElementById('gisFileSelectLink');
+        const uploadArea = document.getElementById('gisFileUploadArea');
+        const fileList = document.getElementById('gisFileList');
+        const uploadButton = document.getElementById('gisUploadButton');
+        
+        if (!uploadBtn || !modal) {
+            console.warn('GIS upload elements not found');
+            return;
+        }
+
+        // Show modal when upload button is clicked
+        uploadBtn.addEventListener('click', () => {
+            modal.style.display = 'block';
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        });
+
+        // File selection
+        fileSelectLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            this.handleFileSelection(files);
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            this.handleFileSelection(files);
+        });
+
+        // Upload button
+        uploadButton.addEventListener('click', () => {
+            this.uploadGISFiles();
+        });
+
+        // Modal close buttons
+        const closeButtons = modal.querySelectorAll('[data-dismiss="modal"], .close');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.closeModal('gisUploadModal');
+            });
+        });
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeModal('gisUploadModal');
+            }
+        });
+    }
+
+    /**
+     * Handle file selection for GIS upload
+     */
+    handleFileSelection(files) {
+        const fileList = document.getElementById('gisFileList');
+        const uploadButton = document.getElementById('gisUploadButton');
+        
+        if (files.length === 0) {
+            fileList.classList.add('hidden');
+            uploadButton.disabled = true;
+            return;
+        }
+
+        // Validate file types
+        const validExtensions = ['.shp', '.dbf', '.shx', '.prj', '.kml', '.kmz', '.geojson', '.json', '.tif', '.tiff'];
+        const validFiles = files.filter(file => {
+            const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            return validExtensions.includes(ext);
+        });
+
+        if (validFiles.length === 0) {
+            this.showToast('No valid GIS files selected', 'error');
+            return;
+        }
+
+        // Display selected files
+        fileList.classList.remove('hidden');
+        fileList.innerHTML = validFiles.map(file => `
+            <div class="file-item" data-filename="${file.name}">
+                <div class="file-info">
+                    <i class="fas fa-file file-icon"></i>
+                    <div class="file-details">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${this.formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button class="file-remove" onclick="UI.removeFile('${file.name}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `).join('');
+
+        // Store files for upload
+        this.selectedFiles = validFiles;
+        uploadButton.disabled = false;
+    }
+
+    /**
+     * Remove a file from selection
+     */
+    removeFile(filename) {
+        if (!this.selectedFiles) return;
+        
+        this.selectedFiles = this.selectedFiles.filter(file => file.name !== filename);
+        this.handleFileSelection(this.selectedFiles);
+    }
+
+    /**
+     * Upload GIS files
+     */
+    async uploadGISFiles() {
+        if (!this.selectedFiles || this.selectedFiles.length === 0) {
+            this.showToast('No files selected', 'error');
+            return;
+        }
+
+        const dataType = document.querySelector('input[name="gisDataType"]:checked').value;
+        const progressSection = document.getElementById('gisUploadProgress');
+        const progressBar = progressSection.querySelector('.progress-bar');
+        const statusText = document.getElementById('gisUploadStatus');
+        const uploadButton = document.getElementById('gisUploadButton');
+
+        try {
+            // Show progress
+            progressSection.classList.remove('hidden');
+            uploadButton.disabled = true;
+            statusText.textContent = 'Preparing upload...';
+
+            const formData = new FormData();
+            this.selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            formData.append('dataType', dataType);
+
+            // Create XMLHttpRequest for progress tracking
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.setAttribute('aria-valuenow', percentComplete);
+                    statusText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        this.showToast(`Successfully uploaded ${response.featuresCount} features`, 'success');
+                        this.closeModal('gisUploadModal');
+                        
+                        // Refresh map layers if available
+                        if (window.mapManager) {
+                            window.mapManager.refreshGISLayers();
+                        }
+                    } else {
+                        throw new Error(response.error || 'Upload failed');
+                    }
+                } else {
+                    throw new Error(`Upload failed with status ${xhr.status}`);
+                }
+            });
+
+            xhr.addEventListener('error', () => {
+                throw new Error('Network error during upload');
+            });
+
+            xhr.open('POST', '/api/gis/upload');
+            xhr.send(formData);
+
+        } catch (error) {
+            console.error('Error uploading GIS files:', error);
+            this.showToast('Error uploading GIS files: ' + error.message, 'error');
+        } finally {
+            uploadButton.disabled = false;
+            setTimeout(() => {
+                progressSection.classList.add('hidden');
+                progressBar.style.width = '0%';
+                statusText.textContent = 'Preparing upload...';
+            }, 2000);
+        }
+    }
+
+    /**
+     * Format file size for display
+     */
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Close modal using vanilla JavaScript
+     */
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            
+            // Reset form if it's the GIS upload modal
+            if (modalId === 'gisUploadModal') {
+                this.resetGISUploadForm();
+            }
+        }
+    }
+
+    /**
+     * Reset GIS upload form
+     */
+    resetGISUploadForm() {
+        const fileInput = document.getElementById('gisFileInput');
+        const fileList = document.getElementById('gisFileList');
+        const uploadButton = document.getElementById('gisUploadButton');
+        const progressSection = document.getElementById('gisUploadProgress');
+        
+        if (fileInput) fileInput.value = '';
+        if (fileList) fileList.classList.add('hidden');
+        if (uploadButton) uploadButton.disabled = true;
+        if (progressSection) progressSection.classList.add('hidden');
+        
+        this.selectedFiles = [];
     }
 }
 

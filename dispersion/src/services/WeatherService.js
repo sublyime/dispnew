@@ -56,9 +56,14 @@ class WeatherService {
 
       const { forecastOffice, gridX, gridY } = gridResponse.data.properties;
 
+      // Extract office code from forecastOffice URL if needed
+      const officeCode = typeof forecastOffice === 'string' && forecastOffice.includes('/') 
+        ? forecastOffice.split('/').pop() 
+        : forecastOffice;
+
       // Get the current conditions
       const observationsResponse = await axios.get(
-        `${this.baseURL}/gridpoints/${forecastOffice}/${gridX},${gridY}/observations`,
+        `${this.baseURL}/gridpoints/${officeCode}/${gridX},${gridY}/observations`,
         {
           headers: {
             'User-Agent': 'Chemical Dispersion Modeler (contact@example.com)'
@@ -126,20 +131,23 @@ class WeatherService {
         RETURNING id
       `;
 
+      // Apply database field constraints to prevent overflow
+      const constrainedData = this.constrainWeatherValues(weatherData);
+
       const values = [
         stationId,
-        weatherData.timestamp,
-        weatherData.temperature,
-        weatherData.humidity,
-        weatherData.pressure,
-        weatherData.wind_speed,
-        weatherData.wind_direction,
-        weatherData.precipitation || 0,
-        weatherData.cloud_cover,
-        weatherData.visibility,
-        weatherData.atmospheric_stability,
-        weatherData.mixing_height,
-        JSON.stringify(weatherData.raw_data)
+        constrainedData.timestamp,
+        constrainedData.temperature,
+        constrainedData.humidity,
+        constrainedData.pressure,
+        constrainedData.wind_speed,
+        constrainedData.wind_direction,
+        constrainedData.precipitation || 0,
+        constrainedData.cloud_cover,
+        constrainedData.visibility,
+        constrainedData.atmospheric_stability,
+        constrainedData.mixing_height,
+        JSON.stringify(constrainedData.raw_data)
       ];
 
       const result = await DatabaseService.query(insertQuery, values);
@@ -172,7 +180,7 @@ class WeatherService {
         // Create new station
         const insertQuery = `
           INSERT INTO weather_stations (station_id, name, location, station_type)
-          VALUES ($1, $2, ST_GeomFromText('POINT($3 $4)', 4326), 'api')
+          VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), 'api')
           RETURNING id
         `;
         
@@ -239,7 +247,7 @@ class WeatherService {
         SELECT wd.*, ws.station_id, ws.name as station_name
         FROM weather_data wd
         JOIN weather_stations ws ON wd.station_id = ws.id
-        WHERE ST_DWithin(ws.location, ST_GeomFromText('POINT($1 $2)', 4326), 0.01)
+        WHERE ST_DWithin(ws.location, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.01)
         ORDER BY wd.timestamp DESC
         LIMIT 1
       `;
@@ -270,7 +278,56 @@ class WeatherService {
 
   parseValue(valueObj) {
     if (!valueObj || valueObj.value === null) return null;
-    return parseFloat(valueObj.value);
+    const value = parseFloat(valueObj.value);
+    
+    // Return null for invalid numbers to prevent database errors
+    if (isNaN(value) || !isFinite(value)) return null;
+    
+    return value;
+  }
+
+  parseTemperature(tempObj) {
+    if (!tempObj || tempObj.value === null) return null;
+    let temp = parseFloat(tempObj.value);
+    
+    // Return null for invalid numbers
+    if (isNaN(temp) || !isFinite(temp)) return null;
+    
+    // Convert Kelvin to Celsius if needed
+    if (temp > 200) {
+      temp = temp - 273.15;
+    }
+    
+    // Constrain to reasonable temperature range (-100°C to +100°C)
+    return Math.max(-100, Math.min(100, temp));
+  }
+
+  /**
+   * Constrain weather values to fit database field limits
+   */
+  constrainWeatherValues(weatherData) {
+    return {
+      ...weatherData,
+      temperature: this.constrainValue(weatherData.temperature, -99.99, 999.99),
+      humidity: this.constrainValue(weatherData.humidity, 0, 100),
+      pressure: this.constrainValue(weatherData.pressure, 0, 999999.99),
+      wind_speed: this.constrainValue(weatherData.wind_speed, 0, 9999.99),
+      wind_direction: this.constrainValue(weatherData.wind_direction, 0, 360),
+      precipitation: this.constrainValue(weatherData.precipitation, 0, 9999.99),
+      cloud_cover: this.constrainValue(weatherData.cloud_cover, 0, 100),
+      visibility: this.constrainValue(weatherData.visibility, 0, 9999.99),
+      mixing_height: this.constrainValue(weatherData.mixing_height, 0, 999999.99)
+    };
+  }
+
+  /**
+   * Constrain a numeric value to fit within min/max bounds
+   */
+  constrainValue(value, min, max) {
+    if (value === null || value === undefined || isNaN(value) || !isFinite(value)) {
+      return null;
+    }
+    return Math.max(min, Math.min(max, parseFloat(value)));
   }
 
   parseCloudCover(cloudLayers) {

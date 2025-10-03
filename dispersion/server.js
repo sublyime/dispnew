@@ -29,8 +29,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
-      scriptSrc: ["'self'", "https://unpkg.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "wss:", "https:"],
     },
@@ -97,6 +97,11 @@ wss.on('connection', (ws, req) => {
       console.log('Received WebSocket message:', data.type);
       
       switch (data.type) {
+        case 'subscribe':
+          // Handle client subscription to update types
+          ws.subscriptions = data.payload.types || [];
+          console.log('Client subscribed to:', ws.subscriptions);
+          break;
         case 'subscribe_dispersion':
           ws.dispersionId = data.dispersionId;
           break;
@@ -143,6 +148,8 @@ async function startServer() {
     
     // Initialize dispersion service
     const dispersionService = new DispersionService(wss);
+    // Pass the dispersion service to the routes
+    dispersionRoutes.setDispersionService && dispersionRoutes.setDispersionService(dispersionService);
     dispersionService.startRealTimeUpdates();
     console.log('Dispersion service initialized');
     

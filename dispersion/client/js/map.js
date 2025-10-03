@@ -137,9 +137,11 @@ class MapManager {
             })
         }).addTo(this.map);
 
-        // Update form
-        document.getElementById('selectedLat').textContent = lat.toFixed(6);
-        document.getElementById('selectedLon').textContent = lng.toFixed(6);
+        // Update form if elements exist
+        const selectedLat = document.getElementById('selectedLat');
+        const selectedLon = document.getElementById('selectedLon');
+        if (selectedLat) selectedLat.textContent = lat.toFixed(6);
+        if (selectedLon) selectedLon.textContent = lng.toFixed(6);
 
         // Show release form
         this.showReleaseModal();
@@ -149,9 +151,11 @@ class MapManager {
      * Select receptor location
      */
     selectReceptorLocation(lat, lng) {
-        // Update receptor form coordinates
-        document.getElementById('receptorLat').value = lat.toFixed(6);
-        document.getElementById('receptorLon').value = lng.toFixed(6);
+        // Update receptor form coordinates if elements exist
+        const receptorLat = document.getElementById('receptorLat');
+        const receptorLon = document.getElementById('receptorLon');
+        if (receptorLat) receptorLat.value = lat.toFixed(6);
+        if (receptorLon) receptorLon.value = lng.toFixed(6);
     }
 
     /**
@@ -159,7 +163,9 @@ class MapManager {
      */
     showReleaseModal() {
         const modal = document.getElementById('releaseModal');
-        modal.classList.add('show');
+        if (modal) {
+            modal.classList.add('show');
+        }
         this.setDrawMode(null);
     }
 
@@ -349,10 +355,10 @@ class MapManager {
                     <p><strong>Population:</strong> ${receptor.population || 1}</p>
                     <p><strong>Sensitivity:</strong> ${receptor.sensitivity_level}</p>
                     <div class="popup-actions">
-                        <button class="btn btn-sm" onclick="window.UI.editReceptor(${receptor.id})">
+                        <button class="btn btn-sm receptor-edit-btn" data-receptor-id="${receptor.id}">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="btn btn-sm" onclick="window.UI.deleteReceptor(${receptor.id})">
+                        <button class="btn btn-sm receptor-delete-btn" data-receptor-id="${receptor.id}">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -405,8 +411,11 @@ class MapManager {
         plume.bindPopup(`
             <div class="plume-popup">
                 <h4>Chemical Plume</h4>
+                <p><strong>Model:</strong> ${calculation.calculation_method || 'Unknown'} (ALOHA ${calculation.model_parameters?.aloha_version || '5.4.4'} compatible)</p>
                 <p><strong>Max Concentration:</strong> ${Utils.formatConcentration(calculation.max_concentration)}</p>
                 <p><strong>Affected Area:</strong> ${Utils.formatDistance(Math.sqrt(calculation.affected_area))} radius</p>
+                <p><strong>Wind Speed:</strong> ${calculation.model_parameters?.wind_speed || 'N/A'} m/s</p>
+                <p><strong>Stability Class:</strong> ${calculation.model_parameters?.stability_class || 'N/A'}</p>
                 <p><strong>Calculation Time:</strong> ${Utils.formatDate(calculation.calculation_time)}</p>
             </div>
         `);
@@ -437,10 +446,10 @@ class MapManager {
                 <p><strong>Status:</strong> <span class="status-${release.status}">${release.status}</span></p>
                 <p><strong>Started:</strong> ${Utils.formatDate(release.start_time)}</p>
                 <div class="popup-actions">
-                    <button class="btn btn-sm" onclick="window.UI.viewReleaseDetails(${release.id})">
+                    <button class="btn btn-sm release-details-btn" data-release-id="${release.id}">
                         <i class="fas fa-eye"></i> Details
                     </button>
-                    <button class="btn btn-sm" onclick="window.UI.stopRelease(${release.id})">
+                    <button class="btn btn-sm release-stop-btn" data-release-id="${release.id}">
                         <i class="fas fa-stop"></i> Stop
                     </button>
                 </div>
@@ -519,6 +528,105 @@ class MapManager {
             bounds.getEast(),
             bounds.getNorth()
         ].join(',');
+    }
+
+    /**
+     * Refresh GIS layers after upload
+     */
+    async refreshGISLayers() {
+        try {
+            // Refresh buildings layer
+            if (this.layers.buildings) {
+                this.map.removeLayer(this.layers.buildings);
+            }
+            await this.loadBuildingsLayer();
+
+            // Refresh topography layer
+            if (this.layers.topography) {
+                this.map.removeLayer(this.layers.topography);
+            }
+            await this.loadTopographyLayer();
+
+            console.log('GIS layers refreshed');
+        } catch (error) {
+            console.error('Error refreshing GIS layers:', error);
+        }
+    }
+
+    /**
+     * Load buildings layer from API
+     */
+    async loadBuildingsLayer() {
+        try {
+            const response = await fetch('/api/gis/buildings');
+            const data = await response.json();
+            
+            if (data.success && data.features.length > 0) {
+                this.layers.buildings = L.geoJSON(data, {
+                    style: {
+                        color: '#ff7800',
+                        weight: 2,
+                        opacity: 0.8,
+                        fillColor: '#ffaa40',
+                        fillOpacity: 0.4
+                    },
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties) {
+                            const props = feature.properties;
+                            let popupContent = '<h6>Building</h6>';
+                            
+                            Object.keys(props).forEach(key => {
+                                if (props[key] !== null && props[key] !== undefined) {
+                                    popupContent += `<strong>${key}:</strong> ${props[key]}<br>`;
+                                }
+                            });
+                            
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }).addTo(this.map);
+            }
+        } catch (error) {
+            console.error('Error loading buildings layer:', error);
+        }
+    }
+
+    /**
+     * Load topography layer from API
+     */
+    async loadTopographyLayer() {
+        try {
+            const response = await fetch('/api/gis/topography');
+            const data = await response.json();
+            
+            if (data.success && data.features.length > 0) {
+                this.layers.topography = L.geoJSON(data, {
+                    style: {
+                        color: '#8B4513',
+                        weight: 1,
+                        opacity: 0.6,
+                        fillColor: '#DEB887',
+                        fillOpacity: 0.3
+                    },
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties) {
+                            const props = feature.properties;
+                            let popupContent = '<h6>Topography</h6>';
+                            
+                            Object.keys(props).forEach(key => {
+                                if (props[key] !== null && props[key] !== undefined) {
+                                    popupContent += `<strong>${key}:</strong> ${props[key]}<br>`;
+                                }
+                            });
+                            
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }).addTo(this.map);
+            }
+        } catch (error) {
+            console.error('Error loading topography layer:', error);
+        }
     }
 }
 

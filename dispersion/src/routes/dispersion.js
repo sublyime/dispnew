@@ -13,6 +13,29 @@ router.setDispersionService = (service) => {
 };
 
 /**
+ * GET /api/dispersion/active
+ * Get all active dispersion calculations
+ */
+router.get('/active', async (req, res) => {
+  try {
+    const query = `
+      SELECT dc.*, re.chemical_id, c.name as chemical_name
+      FROM dispersion_calculations dc
+      JOIN release_events re ON dc.release_event_id = re.id
+      JOIN chemicals c ON re.chemical_id = c.id
+      WHERE re.status = 'active'
+      ORDER BY dc.calculation_time DESC
+    `;
+    
+    const result = await DatabaseService.query(query);
+    res.json({ calculations: result.rows });
+  } catch (error) {
+    console.error('Error getting active dispersions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/dispersion/release
  * Create a new chemical release event and start dispersion modeling
  */

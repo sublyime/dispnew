@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const DatabaseService = require('../services/DatabaseService');
+const CameoChemicalsService = require('../services/CameoChemicalsService');
+
+// Initialize CAMEO service
+const cameoService = new CameoChemicalsService();
 
 /**
  * GET /api/chemicals
@@ -546,5 +550,214 @@ router.get('/properties/physical-states', (req, res) => {
     ]
   });
 });
+
+/**
+ * GET /api/chemicals/cameo/search
+ * Search chemicals in CAMEO database
+ */
+router.get('/cameo/search', async (req, res) => {
+  try {
+    const { q: query, limit = 20 } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({
+        error: 'Search query is required',
+        message: 'Please provide a search query (q parameter)'
+      });
+    }
+
+    const results = await cameoService.searchChemicals(query, parseInt(limit));
+    
+    res.json({
+      success: true,
+      query,
+      count: results.length,
+      chemicals: results
+    });
+
+  } catch (error) {
+    console.error('CAMEO search error:', error);
+    res.status(500).json({
+      error: 'Search failed',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/chemicals/cameo/:identifier
+ * Get detailed chemical properties from CAMEO by identifier
+ */
+router.get('/cameo/:identifier', async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    
+    const properties = await cameoService.getChemicalProperties(identifier);
+    
+    if (!properties) {
+      return res.status(404).json({
+        error: 'Chemical not found in CAMEO database',
+        message: `No chemical found with identifier: ${identifier}`
+      });
+    }
+
+    res.json({
+      success: true,
+      chemical: properties
+    });
+
+  } catch (error) {
+    console.error('CAMEO properties error:', error);
+    res.status(500).json({
+      error: 'Failed to get chemical properties from CAMEO',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/chemicals/recommendations/:scenario
+ * Get chemical recommendations for specific release scenarios
+ */
+router.get('/recommendations/:scenario', async (req, res) => {
+  try {
+    const { scenario } = req.params;
+    const { hazard_level = 'medium' } = req.query;
+    
+    const recommendations = await cameoService.getRecommendationsForScenario(
+      scenario, 
+      hazard_level
+    );
+    
+    res.json({
+      success: true,
+      scenario,
+      hazard_level,
+      count: recommendations.length,
+      recommendations
+    });
+
+  } catch (error) {
+    console.error('Recommendations error:', error);
+    res.status(500).json({
+      error: 'Failed to get recommendations',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/chemicals/validate
+ * Validate chemical data completeness for dispersion modeling
+ */
+router.post('/validate', async (req, res) => {
+  try {
+    const { chemical_id } = req.body;
+    
+    if (!chemical_id) {
+      return res.status(400).json({
+        error: 'Chemical ID is required',
+        message: 'Please provide a chemical_id in the request body'
+      });
+    }
+
+    const properties = await cameoService.getChemicalProperties(chemical_id);
+    
+    if (!properties) {
+      return res.status(404).json({
+        error: 'Chemical not found',
+        message: `No chemical found with ID: ${chemical_id}`
+      });
+    }
+
+    // Validate data completeness for dispersion modeling
+    const validation = validateChemicalForDispersion(properties);
+    
+    res.json({
+      success: true,
+      chemical: properties,
+      validation
+    });
+
+  } catch (error) {
+    console.error('Chemical validation error:', error);
+    res.status(500).json({
+      error: 'Validation failed',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Validate chemical data completeness for dispersion modeling
+ */
+function validateChemicalForDispersion(properties) {
+  const requiredFields = {
+    'molecular_weight': 'Required for heavy gas determination',
+    'vapor_pressure': 'Required for evaporation rate calculations',
+    'boiling_point': 'Required for phase change calculations',
+    'density': 'Required for heavy gas modeling',
+    'physical_state': 'Required for source term modeling'
+  };
+
+  const optionalFields = {
+    'heat_of_vaporization': 'Improves evaporation rate accuracy',
+    'critical_temperature': 'Improves equation of state calculations',
+    'critical_pressure': 'Improves equation of state calculations',
+    'solubility_water': 'Required for wet deposition modeling',
+    'henry_constant': 'Required for air-water partitioning'
+  };
+
+  const safetyFields = {
+    'idlh': 'Required for threat zone calculations',
+    'twa': 'Required for occupational exposure assessment',
+    'lc50': 'Required for toxicity modeling'
+  };
+
+  const validation = {
+    is_complete: true,
+    missing_required: [],
+    missing_optional: [],
+    missing_safety: [],
+    quality_score: properties.quality_score || 0,
+    dispersion_ready: false
+  };
+
+  // Check required fields
+  Object.keys(requiredFields).forEach(field => {
+    if (!properties[field] || properties[field] === null) {
+      validation.missing_required.push({
+        field,
+        description: requiredFields[field]
+      });
+      validation.is_complete = false;
+    }
+  });
+
+  // Check optional fields
+  Object.keys(optionalFields).forEach(field => {
+    if (!properties[field] || properties[field] === null) {
+      validation.missing_optional.push({
+        field,
+        description: optionalFields[field]
+      });
+    }
+  });
+
+  // Check safety fields
+  Object.keys(safetyFields).forEach(field => {
+    if (!properties[field] || properties[field] === null) {
+      validation.missing_safety.push({
+        field,
+        description: safetyFields[field]
+      });
+    }
+  });
+
+  // Determine if ready for dispersion modeling
+  validation.dispersion_ready = validation.missing_required.length === 0;
+
+  return validation;
+}
 
 module.exports = router;

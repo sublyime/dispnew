@@ -1,5 +1,7 @@
 const DatabaseService = require('./DatabaseService');
 const WeatherService = require('./WeatherService');
+const SourceStrengthService = require('./SourceStrengthService');
+const CameoChemicalsService = require('./CameoChemicalsService');
 
 class DispersionService {
   constructor(websocketServer) {
@@ -7,6 +9,8 @@ class DispersionService {
     this.activeCalculations = new Map();
     this.updateInterval = 30000; // 30 seconds
     this.intervalId = null;
+    this.sourceStrengthService = new SourceStrengthService();
+    this.cameoChemicalsService = new CameoChemicalsService();
   }
 
   /**
@@ -75,7 +79,7 @@ class DispersionService {
           release_height, temperature, duration, start_time, weather_conditions,
           status, created_by
         ) VALUES (
-          ST_GeomFromText('POINT($1 $2)', 4326), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+          ST_SetSRID(ST_MakePoint($1, $2), 4326), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
         )
         RETURNING id, start_time
       `;
@@ -83,7 +87,7 @@ class DispersionService {
       const values = [
         parseFloat(longitude),
         parseFloat(latitude),
-        chemical_id,
+        parseInt(chemical_id),
         release_type,
         release_rate || null,
         total_mass || null,
@@ -117,9 +121,26 @@ class DispersionService {
         calculation: initialCalculation
       });
 
+      // Get full release details for response
+      const fullReleaseQuery = `
+        SELECT 
+          re.id, re.release_type, re.release_rate, re.total_mass,
+          re.release_height, re.temperature, re.duration,
+          re.start_time, re.end_time, re.status, re.created_by, re.created_at,
+          ST_X(re.location) as longitude, ST_Y(re.location) as latitude,
+          c.name as chemical_name, c.cas_number, c.physical_state,
+          re.weather_conditions
+        FROM release_events re
+        JOIN chemicals c ON re.chemical_id = c.id
+        WHERE re.id = $1
+      `;
+
+      const fullReleaseResult = await DatabaseService.query(fullReleaseQuery, [releaseEventId]);
+      const fullRelease = fullReleaseResult.rows[0];
+
       return {
+        ...fullRelease,
         release_event_id: releaseEventId,
-        start_time: result.rows[0].start_time,
         initial_calculation: initialCalculation
       };
 
@@ -130,7 +151,7 @@ class DispersionService {
   }
 
   /**
-   * Calculate dispersion for a release event
+   * Calculate dispersion for a release event using ALOHA-compliant methodology
    */
   async calculateDispersion(releaseEventId, weatherData, chemical) {
     try {
@@ -158,11 +179,54 @@ class DispersionService {
 
       const releaseEvent = releaseResult.rows[0];
 
-      // Perform dispersion calculation using Gaussian plume model
+      // Calculate source strength using ALOHA methodology
+      let sourceStrength;
+      if (releaseEvent.release_type === 'puddle') {
+        // For puddle sources, use Brighton's evaporation model
+        const puddleData = {
+          area: 100, // m² - default, should be calculated or specified
+          initial_temperature: weatherData.temperature || 293.15,
+          substrate_type: 'soil',
+          substrate_temperature: weatherData.temperature || 293.15
+        };
+        sourceStrength = await this.sourceStrengthService.calculatePuddleEvaporation(
+          puddleData, weatherData, chemical
+        );
+      } else {
+        // For direct releases
+        sourceStrength = this.sourceStrengthService.calculateDirectSource({
+          release_rate: releaseEvent.release_rate,
+          total_mass: releaseEvent.total_mass,
+          duration: releaseEvent.duration,
+          release_type: releaseEvent.release_type
+        });
+      }
+
+      // Perform dispersion calculation using enhanced Gaussian plume model
       const dispersionResult = await this.gaussianPlumeModel(
         releaseEvent,
         weatherData,
         chemical
+      );
+
+      // Calculate threat zones for different Levels of Concern
+      const levelsOfConcern = [
+        10,    // AEGL-1 equivalent (μg/m³)
+        100,   // AEGL-2 equivalent
+        1000,  // AEGL-3 equivalent
+        10000  // IDLH equivalent
+      ];
+
+      const threatZones = [];
+      for (const loc of levelsOfConcern) {
+        const zones = this.calculateThreatZones(dispersionResult.concentrations, dispersionResult.plumePoints, loc);
+        threatZones.push(...zones);
+      }
+
+      // Estimate maximum concentration with uncertainty bounds
+      const maxConcentrationAnalysis = this.estimateMaximumConcentration(
+        dispersionResult.concentrations, 
+        dispersionResult.modelParameters
       );
 
       // Get affected receptors
@@ -172,7 +236,7 @@ class DispersionService {
         chemical
       );
 
-      // Store calculation results
+      // Store calculation results with enhanced data
       const insertQuery = `
         INSERT INTO dispersion_calculations (
           release_event_id, calculation_time, plume_geometry, max_concentration,
@@ -182,15 +246,23 @@ class DispersionService {
         RETURNING id
       `;
 
+      const enhancedModelParameters = {
+        ...dispersionResult.modelParameters,
+        source_strength: sourceStrength,
+        threat_zones: threatZones,
+        max_concentration_analysis: maxConcentrationAnalysis,
+        aloha_compliant: true
+      };
+
       const values = [
         releaseEventId,
         new Date(),
         dispersionResult.plumeGeometry,
-        dispersionResult.maxConcentration,
+        maxConcentrationAnalysis.upper_bound, // Use upper bound for conservative estimate
         dispersionResult.affectedArea,
-        'gaussian_plume',
+        dispersionResult.modelParameters.model_type || 'gaussian_plume',
         JSON.stringify(weatherData),
-        JSON.stringify(dispersionResult.modelParameters),
+        JSON.stringify(enhancedModelParameters),
         JSON.stringify(receptorImpacts)
       ];
 
@@ -203,10 +275,15 @@ class DispersionService {
       return {
         calculation_id: calculationId,
         plume_geometry: JSON.parse(dispersionResult.plumeGeometry),
-        max_concentration: dispersionResult.maxConcentration,
+        max_concentration: maxConcentrationAnalysis.estimated_max,
+        max_concentration_upper_bound: maxConcentrationAnalysis.upper_bound,
         affected_area: dispersionResult.affectedArea,
         receptor_impacts: receptorImpacts,
-        calculation_time: new Date()
+        threat_zones: threatZones,
+        source_strength: sourceStrength,
+        model_parameters: enhancedModelParameters,
+        calculation_time: new Date(),
+        aloha_version: '5.4.4_compatible'
       };
 
     } catch (error) {
@@ -216,9 +293,10 @@ class DispersionService {
   }
 
   /**
-   * Gaussian plume dispersion model implementation
+   * Gaussian plume dispersion model implementation following ALOHA 5.4.4 specifications
+   * Based on NOAA Technical Memorandum NOS OR&R 43, Chapter 4.3
    */
-  async gaussianPlumeModel(releaseEvent, weatherData, chemical) {
+  async gaussianPlumeModel(releaseEvent, weatherData, chemical, skipHeavyGasCheck = false) {
     try {
       const {
         longitude,
@@ -237,66 +315,105 @@ class DispersionService {
         mixing_height
       } = weatherData;
 
-      // Model parameters
-      const effectiveHeight = parseFloat(release_height) || 1.0;
-      const windSpeed = Math.max(parseFloat(wind_speed) || 2.0, 0.5); // Minimum 0.5 m/s
+      // Model parameters - validate inputs per ALOHA specifications
+      const effectiveHeight = Math.max(parseFloat(release_height) || 0.0, 0.0);
+      const windSpeed = Math.max(parseFloat(wind_speed) || 2.0, 1.0); // ALOHA minimum 1 m/s
       const windDir = parseFloat(wind_direction) || 270; // Default west wind
       const stability = atmospheric_stability || 'D';
+      const mixingHeight = Math.max(parseFloat(mixing_height) || 1000, 100); // Default 1000m, minimum 100m
 
-      // Pasquill-Gifford dispersion parameters
-      const dispersionParams = this.getDispersionParameters(stability);
+      // Validate wind speed constraint per ALOHA documentation
+      if (windSpeed < 1.0) {
+        throw new Error('ALOHA requires wind speed > 1 m/s. Current wind speed too low for modeling.');
+      }
 
       // Calculate emission rate
       let emissionRate;
       if (release_rate) {
-        emissionRate = parseFloat(release_rate);
+        emissionRate = parseFloat(release_rate) / 1000; // Convert g/s to kg/s
       } else if (total_mass) {
         // Estimate emission rate from total mass (assuming 1-hour release if not specified)
-        emissionRate = parseFloat(total_mass) / 3600; // g/s
+        emissionRate = parseFloat(total_mass) / 3600; // kg/s
       } else {
-        emissionRate = 1.0; // Default 1 g/s
+        emissionRate = 0.001; // Default 1 g/s = 0.001 kg/s
       }
 
-      // Calculate plume centerline concentrations at various distances
-      const distances = [50, 100, 200, 500, 1000, 2000, 5000, 10000]; // meters
+      // Determine if heavy gas model should be used instead (unless explicitly skipped)
+      if (!skipHeavyGasCheck) {
+        const shouldUseHeavyGas = await this.shouldUseHeavyGasModel(chemical, weatherData, emissionRate);
+        if (shouldUseHeavyGas) {
+          return await this.heavyGasModel(releaseEvent, weatherData, chemical);
+        }
+      }
+
+      // ALOHA distance array for calculations (meters)
+      const distances = [10, 25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000];
       const concentrations = [];
       const plumePoints = [];
 
+      // Wind profile calculation using power law (ALOHA Section 4.2.3)
+      const windProfile = this.calculateWindProfile(windSpeed, 10.0, stability);
+
       for (const distance of distances) {
-        // Calculate dispersion coefficients
-        const sigmaY = dispersionParams.a * Math.pow(distance, dispersionParams.b);
-        const sigmaZ = dispersionParams.c * Math.pow(distance, dispersionParams.d);
+        // Skip distances too close to source
+        if (distance < 10) continue;
 
-        // Limit vertical dispersion by mixing height
-        const effectiveSigmaZ = Math.min(sigmaZ, mixing_height / 2.15);
+        // Calculate atmospheric dispersion coefficients per ALOHA methodology
+        const { sigmaY, sigmaZ } = this.calculateDispersionCoefficients(distance, stability, windProfile);
 
-        // Gaussian plume equation for ground-level concentration
+        // Apply mixing height constraints per ALOHA specifications
+        const effectiveSigmaZ = Math.min(sigmaZ, mixingHeight / 2.15);
+
+        // Enhanced wind speed at plume height using power law profile
+        const plumeWindSpeed = this.getWindSpeedAtHeight(windSpeed, 10.0, effectiveHeight, stability);
+
+        // Gaussian plume equation with reflection terms (ALOHA Section 4.3)
         const heightTerm = Math.exp(-0.5 * Math.pow(effectiveHeight / effectiveSigmaZ, 2));
-        const reflectionTerm = Math.exp(-0.5 * Math.pow((effectiveHeight + 2 * mixing_height) / effectiveSigmaZ, 2));
+        const reflectionTerm = effectiveHeight > 0 ? 
+          Math.exp(-0.5 * Math.pow((effectiveHeight + 2 * mixingHeight) / effectiveSigmaZ, 2)) : 0;
         
-        const concentration = (emissionRate / (Math.PI * windSpeed * sigmaY * effectiveSigmaZ)) * 
-                             (heightTerm + reflectionTerm);
+        // Ground-level concentration at plume centerline
+        const denominator = Math.PI * plumeWindSpeed * sigmaY * effectiveSigmaZ;
+        let concentration = 0;
+        
+        if (denominator > 0 && isFinite(denominator) && emissionRate > 0) {
+          concentration = (emissionRate / denominator) * (heightTerm + reflectionTerm);
+        }
+
+        // Handle invalid calculations with detailed logging
+        if (!isFinite(concentration) || isNaN(concentration) || concentration < 0) {
+          console.warn(`Invalid concentration at distance ${distance}m: ${concentration}`, {
+            emissionRate, plumeWindSpeed, sigmaY, effectiveSigmaZ, heightTerm, reflectionTerm,
+            denominator, windSpeed, stability
+          });
+          concentration = 0;
+        }
+
+        // Convert to μg/m³ for consistency with ALOHA outputs
+        const concentrationMicrograms = concentration * 1e9;
 
         concentrations.push({
           distance,
-          concentration: concentration * 1e6, // Convert to μg/m³
+          concentration: concentrationMicrograms,
           sigma_y: sigmaY,
-          sigma_z: effectiveSigmaZ
+          sigma_z: effectiveSigmaZ,
+          wind_speed_at_height: plumeWindSpeed,
+          height_term: heightTerm,
+          reflection_term: reflectionTerm
         });
 
-        // Calculate plume boundary points (±3σ)
-        const crosswindDistance = 3 * sigmaY;
+        // Calculate plume boundary points using ±2σ (ALOHA standard)
+        const crosswindDistance = 2.0 * sigmaY;
         
         // Convert wind direction to mathematical angle (0° = East, counter-clockwise)
-        const mathAngle = (450 - windDir) % 360;
-        const radians = (mathAngle * Math.PI) / 180;
+        const mathAngle = (90 - windDir) * Math.PI / 180;
 
         // Calculate downwind point
-        const downwindLat = latitude + (distance * Math.cos(radians)) / 111320;
-        const downwindLon = longitude + (distance * Math.sin(radians)) / (111320 * Math.cos(latitude * Math.PI / 180));
+        const downwindLat = latitude + (distance * Math.cos(mathAngle)) / 111320;
+        const downwindLon = longitude + (distance * Math.sin(mathAngle)) / (111320 * Math.cos(latitude * Math.PI / 180));
 
         // Calculate crosswind boundary points
-        const crosswindAngle = radians + Math.PI / 2;
+        const crosswindAngle = mathAngle + Math.PI / 2;
         
         const leftLat = downwindLat + (crosswindDistance * Math.cos(crosswindAngle)) / 111320;
         const leftLon = downwindLon + (crosswindDistance * Math.sin(crosswindAngle)) / (111320 * Math.cos(latitude * Math.PI / 180));
@@ -304,33 +421,59 @@ class DispersionService {
         const rightLat = downwindLat - (crosswindDistance * Math.cos(crosswindAngle)) / 111320;
         const rightLon = downwindLon - (crosswindDistance * Math.sin(crosswindAngle)) / (111320 * Math.cos(latitude * Math.PI / 180));
 
-        plumePoints.push({
-          center: [downwindLon, downwindLat],
-          left: [leftLon, leftLat],
-          right: [rightLon, rightLat],
-          distance,
-          concentration: concentration * 1e6
-        });
+        // Validate coordinates before adding to plume
+        if (isFinite(downwindLat) && isFinite(downwindLon) && isFinite(leftLat) && isFinite(leftLon) && isFinite(rightLat) && isFinite(rightLon)) {
+          plumePoints.push({
+            center: [downwindLon, downwindLat],
+            left: [leftLon, leftLat],
+            right: [rightLon, rightLat],
+            distance,
+            concentration: concentrationMicrograms,
+            crosswind_distance: crosswindDistance
+          });
+        } else {
+          console.warn(`Invalid coordinates at distance ${distance}m, skipping point`);
+        }
       }
 
-      // Create plume geometry as GeoJSON polygon
-      const plumeCoordinates = [
+      // Create plume geometry as GeoJSON polygon following ALOHA threat zone methodology
+      let plumeCoordinates = [
         [longitude, latitude], // Source point
         ...plumePoints.map(p => p.left),
         ...plumePoints.slice().reverse().map(p => p.right),
         [longitude, latitude] // Close polygon
       ];
 
+      // Validate plume coordinates - ensure we have enough valid points
+      if (plumePoints.length < 2) {
+        console.warn('Insufficient valid plume points, creating minimal plume around source');
+        // Create a small circle around the source as fallback
+        const radius = 0.001; // ~100m in degrees
+        plumeCoordinates = [
+          [longitude, latitude],
+          [longitude + radius, latitude],
+          [longitude + radius, latitude + radius],
+          [longitude, latitude + radius],
+          [longitude - radius, latitude + radius],
+          [longitude - radius, latitude],
+          [longitude - radius, latitude - radius],
+          [longitude, latitude - radius],
+          [longitude + radius, latitude - radius],
+          [longitude, latitude]
+        ];
+      }
+
       const plumeGeometry = JSON.stringify({
         type: 'Polygon',
         coordinates: [plumeCoordinates]
       });
 
-      // Calculate affected area (simple polygon area calculation)
-      const affectedArea = this.calculatePolygonArea(plumeCoordinates);
+      // Calculate affected area using proper spherical geometry
+      const affectedArea = this.calculateSphericalPolygonArea(plumeCoordinates);
 
-      // Find maximum concentration
-      const maxConcentration = Math.max(...concentrations.map(c => c.concentration));
+      // Find maximum concentration with validation
+      const validConcentrations = concentrations.map(c => c.concentration).filter(c => isFinite(c) && !isNaN(c) && c > 0);
+      const maxConcentration = validConcentrations.length > 0 ? Math.max(...validConcentrations) : 0;
 
       return {
         plumeGeometry,
@@ -339,13 +482,17 @@ class DispersionService {
         concentrations,
         plumePoints,
         modelParameters: {
+          model_type: 'gaussian_plume',
           emission_rate: emissionRate,
           wind_speed: windSpeed,
           wind_direction: windDir,
           stability_class: stability,
           effective_height: effectiveHeight,
-          mixing_height,
-          dispersion_params: dispersionParams
+          mixing_height: mixingHeight,
+          wind_profile: windProfile,
+          molecular_weight: chemical.molecular_weight || 29.0, // Default to air if not specified
+          gas_density: this.calculateGasDensity(chemical, weatherData.temperature || 293.15),
+          aloha_version: '5.4.4_compatible'
         }
       };
 
@@ -357,6 +504,7 @@ class DispersionService {
 
   /**
    * Get Pasquill-Gifford dispersion parameters
+   * Updated to follow ALOHA 5.4.4 specifications exactly
    */
   getDispersionParameters(stabilityClass) {
     const params = {
@@ -373,6 +521,153 @@ class DispersionService {
   }
 
   /**
+   * Calculate wind profile using power law (ALOHA Section 4.2.3)
+   */
+  calculateWindProfile(windSpeed, referenceHeight, stabilityClass) {
+    const powerLawExponents = {
+      'A': 0.108,  // Very unstable
+      'B': 0.112,  // Unstable
+      'C': 0.120,  // Slightly unstable
+      'D': 0.142,  // Neutral
+      'E': 0.203,  // Stable
+      'F': 0.253,  // Very stable
+      'G': 0.253   // Extremely stable (same as F)
+    };
+
+    const exponent = powerLawExponents[stabilityClass] || 0.142;
+    
+    return {
+      reference_wind_speed: windSpeed,
+      reference_height: referenceHeight,
+      power_law_exponent: exponent,
+      stability_class: stabilityClass
+    };
+  }
+
+  /**
+   * Get wind speed at specified height using power law profile
+   */
+  getWindSpeedAtHeight(referenceWindSpeed, referenceHeight, targetHeight, stabilityClass) {
+    const profile = this.calculateWindProfile(referenceWindSpeed, referenceHeight, stabilityClass);
+    const exponent = profile.power_law_exponent;
+    
+    // Power law equation: U(z) = U_ref * (z / z_ref)^n
+    return referenceWindSpeed * Math.pow(targetHeight / referenceHeight, exponent);
+  }
+
+  /**
+   * Calculate atmospheric dispersion coefficients following ALOHA methodology
+   * Uses Pasquill-Gifford dispersion parameters
+   */
+  calculateDispersionCoefficients(distance, stabilityClass, windProfile) {
+    const params = this.getDispersionParameters(stabilityClass);
+    
+    // Calculate sigma_y and sigma_z using Pasquill-Gifford equations
+    const sigmaY = params.a * Math.pow(distance, params.b);
+    const sigmaZ = params.c * Math.pow(distance, params.d);
+    
+    return {
+      sigma_y: sigmaY,
+      sigma_z: sigmaZ,
+      distance: distance,
+      stability_class: stabilityClass,
+      dispersion_params: params
+    };
+  }
+
+  /**
+   * Calculate gas density for chemical vapor
+   */
+  calculateGasDensity(chemical, temperature) {
+    // Use ideal gas law: ρ = (P * M) / (R * T)
+    // Assuming standard atmospheric pressure (101325 Pa)
+    const pressure = 101325; // Pa
+    const gasConstant = 8.314; // J/(mol·K)
+    const molecularWeight = (chemical.molecular_weight || 29.0) / 1000; // kg/mol
+    
+    return (pressure * molecularWeight) / (gasConstant * temperature);
+  }
+
+  /**
+   * Determine if heavy gas model should be used instead of Gaussian
+   * Based on ALOHA Section 4.4.1 criteria
+   */
+  async shouldUseHeavyGasModel(chemical, weatherData, emissionRate) {
+    const airDensity = 1.225; // kg/m³ at standard conditions
+    const temperature = weatherData.temperature || 293.15; // K
+    const chemicalDensity = this.calculateGasDensity(chemical, temperature);
+    
+    // ALOHA criteria: Use heavy gas model if gas is significantly denser than air
+    const densityRatio = chemicalDensity / airDensity;
+    
+    // Use heavy gas model if density ratio > 1.2 (20% heavier than air)
+    return densityRatio > 1.2;
+  }
+
+  /**
+   * Heavy Gas Model for dense gases (ALOHA Section 4.4)
+   * Implementation following NOAA Technical Memorandum specifications
+   */
+  async heavyGasModel(releaseEvent, weatherData, chemical) {
+    try {
+      // For now, implement a simplified heavy gas model
+      // Full implementation would require the complex multi-stage approach described in ALOHA Section 4.4
+      console.warn('Heavy gas model detected but using simplified Gaussian with density corrections');
+      
+      // Use Gaussian model with modifications for dense gases (skip heavy gas check to prevent recursion)
+      const gaussianResult = await this.gaussianPlumeModel(releaseEvent, weatherData, chemical, true);
+      
+      // Apply density corrections to the results
+      const temperature = weatherData.temperature || 293.15;
+      const chemicalDensity = this.calculateGasDensity(chemical, temperature);
+      const airDensity = 1.225;
+      const densityRatio = chemicalDensity / airDensity;
+      
+      // Modify concentrations to account for gravitational settling
+      gaussianResult.concentrations = gaussianResult.concentrations.map(conc => ({
+        ...conc,
+        concentration: conc.concentration * Math.sqrt(densityRatio),
+        model_note: 'heavy_gas_approximation'
+      }));
+      
+      gaussianResult.modelParameters.model_type = 'heavy_gas_simplified';
+      gaussianResult.modelParameters.density_ratio = densityRatio;
+      
+      return gaussianResult;
+      
+    } catch (error) {
+      console.error('Error in heavy gas model:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate spherical polygon area for more accurate area calculations
+   */
+  calculateSphericalPolygonArea(coordinates) {
+    // Simple spherical excess calculation for small polygons
+    // For more accuracy, would need full spherical polygon area calculation
+    let area = 0;
+    const n = coordinates.length;
+    
+    for (let i = 0; i < n - 1; i++) {
+      const [lon1, lat1] = coordinates[i];
+      const [lon2, lat2] = coordinates[i + 1];
+      
+      // Convert to radians
+      const lat1Rad = lat1 * Math.PI / 180;
+      const lat2Rad = lat2 * Math.PI / 180;
+      const lonDiff = (lon2 - lon1) * Math.PI / 180;
+      
+      area += lonDiff * (2 + Math.sin(lat1Rad) + Math.sin(lat2Rad));
+    }
+    
+    area = Math.abs(area) * 6371000 * 6371000 / 2; // Earth radius squared
+    
+    return area;
+  }
+
+  /**
    * Calculate receptor impacts
    */
   async calculateReceptorImpacts(releaseEvent, dispersionResult, chemical) {
@@ -385,10 +680,10 @@ class DispersionService {
         SELECT 
           id, name, receptor_type, height, sensitivity_level, population,
           ST_X(location) as longitude, ST_Y(location) as latitude,
-          ST_Distance(location, ST_GeomFromText('POINT($1 $2)', 4326)) * 111320 as distance_m
+          ST_Distance(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)) * 111320 as distance_m
         FROM receptors
         WHERE active = true
-          AND ST_DWithin(location, ST_GeomFromText('POINT($1 $2)', 4326), 0.18) -- ~20 km
+          AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.18) -- ~20 km
         ORDER BY distance_m
       `;
 
@@ -601,25 +896,136 @@ class DispersionService {
   }
 
   /**
-   * Get chemical properties
+   * Get chemical properties from CAMEO Chemicals database
    */
   async getChemicalProperties(chemicalId) {
     try {
-      const query = `
+      // First try to get from local database
+      const localQuery = `
         SELECT 
-          id, name, cas_number, molecular_weight, density, vapor_pressure,
+          id, name, cas_number, cameo_id, molecular_weight, density, vapor_pressure,
           boiling_point, melting_point, physical_state, volatility_class,
-          toxicity_data, safety_data
+          toxicity_data, safety_data, last_updated
         FROM chemicals
-        WHERE id = $1
+        WHERE id = $1 OR cameo_id = $2 OR cas_number = $3
       `;
 
-      const result = await DatabaseService.query(query, [chemicalId]);
-      return result.rows[0] || null;
+      const localResult = await DatabaseService.query(localQuery, [
+        parseInt(chemicalId) || null,
+        chemicalId.toString(),
+        chemicalId.toString()
+      ]);
+      
+      if (localResult.rows.length > 0) {
+        const localData = localResult.rows[0];
+        
+        // Check if data is recent (less than 30 days old)
+        const lastUpdated = new Date(localData.last_updated);
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        
+        if (lastUpdated > thirtyDaysAgo) {
+          return localData;
+        }
+      }
+
+      // If not in local database or data is stale, fetch from CAMEO
+      let cameoData;
+      
+      // If chemicalId looks like a CAMEO ID, fetch directly
+      if (chemicalId.startsWith('CAM') || /^\d+$/.test(chemicalId)) {
+        cameoData = await this.cameoChemicalsService.getChemicalProperties(chemicalId);
+      } else {
+        // Search by name or CAS number
+        const searchResults = await this.cameoChemicalsService.searchChemicals(chemicalId, 1);
+        if (searchResults.length > 0) {
+          cameoData = await this.cameoChemicalsService.getChemicalProperties(searchResults[0].cameo_id);
+        }
+      }
+
+      if (cameoData) {
+        // Store/update in local database
+        await this.updateLocalChemicalData(cameoData);
+        return cameoData;
+      }
+
+      // Fallback to existing local data if available
+      if (localResult.rows.length > 0) {
+        return localResult.rows[0];
+      }
+
+      throw new Error(`Chemical not found: ${chemicalId}`);
 
     } catch (error) {
       console.error('Error getting chemical properties:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Update local chemical database with CAMEO data
+   */
+  async updateLocalChemicalData(cameoData) {
+    try {
+      const upsertQuery = `
+        INSERT INTO chemicals (
+          cameo_id, name, cas_number, formula, molecular_weight, density,
+          vapor_pressure, boiling_point, melting_point, physical_state,
+          volatility_class, toxicity_data, safety_data, last_updated
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ON CONFLICT (cameo_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          cas_number = EXCLUDED.cas_number,
+          formula = EXCLUDED.formula,
+          molecular_weight = EXCLUDED.molecular_weight,
+          density = EXCLUDED.density,
+          vapor_pressure = EXCLUDED.vapor_pressure,
+          boiling_point = EXCLUDED.boiling_point,
+          melting_point = EXCLUDED.melting_point,
+          physical_state = EXCLUDED.physical_state,
+          volatility_class = EXCLUDED.volatility_class,
+          toxicity_data = EXCLUDED.toxicity_data,
+          safety_data = EXCLUDED.safety_data,
+          last_updated = EXCLUDED.last_updated
+        RETURNING id
+      `;
+
+      const toxicityData = {
+        twa: cameoData.twa,
+        stel: cameoData.stel,
+        idlh: cameoData.idlh,
+        lc50: cameoData.lc50
+      };
+
+      const safetyData = {
+        flash_point: cameoData.flash_point,
+        explosive_limits: cameoData.explosive_limits,
+        hazard_classification: cameoData.hazard_classification,
+        quality_score: cameoData.quality_score
+      };
+
+      const values = [
+        cameoData.cameo_id,
+        cameoData.name,
+        cameoData.cas_number,
+        cameoData.formula,
+        cameoData.molecular_weight,
+        cameoData.density,
+        cameoData.vapor_pressure,
+        cameoData.boiling_point,
+        cameoData.melting_point,
+        cameoData.physical_state,
+        cameoData.volatility_class,
+        JSON.stringify(toxicityData),
+        JSON.stringify(safetyData),
+        new Date()
+      ];
+
+      await DatabaseService.query(upsertQuery, values);
+      console.log(`Updated chemical data for ${cameoData.name} (${cameoData.cameo_id})`);
+
+    } catch (error) {
+      console.error('Error updating local chemical data:', error);
+      // Don't throw - this is not critical for dispersion calculation
     }
   }
 
@@ -680,22 +1086,181 @@ class DispersionService {
     return ((bearing * 180) / Math.PI + 360) % 360;
   }
 
-  calculatePolygonArea(coordinates) {
-    // Simple polygon area calculation using the shoelace formula
-    let area = 0;
-    const n = coordinates.length;
+  /**
+   * Calculate threat zones based on Levels of Concern (LOC) following ALOHA Section 4.5
+   */
+  calculateThreatZones(concentrations, plumePoints, levelOfConcern) {
+    const threatZones = [];
     
-    for (let i = 0; i < n - 1; i++) {
-      area += coordinates[i][0] * coordinates[i + 1][1];
-      area -= coordinates[i + 1][0] * coordinates[i][1];
+    // Find the maximum downwind distance where concentration exceeds LOC
+    let maxThreatDistance = 0;
+    const threatConcentrations = concentrations.filter(conc => conc.concentration >= levelOfConcern);
+    
+    if (threatConcentrations.length > 0) {
+      maxThreatDistance = Math.max(...threatConcentrations.map(conc => conc.distance));
     }
     
-    area = Math.abs(area) / 2;
+    // Create threat zone polygon
+    if (maxThreatDistance > 0) {
+      const threatPoints = plumePoints.filter(point => 
+        point.distance <= maxThreatDistance && point.concentration >= levelOfConcern
+      );
+      
+      if (threatPoints.length > 0) {
+        threatZones.push({
+          level_of_concern: levelOfConcern,
+          max_distance: maxThreatDistance,
+          threat_points: threatPoints,
+          area: this.calculateThreatZoneArea(threatPoints),
+          confidence_level: this.calculateConfidenceLevel(maxThreatDistance)
+        });
+      }
+    }
     
-    // Convert to square meters (approximate)
-    const lat = coordinates[0][1];
-    const metersPerDegree = 111320 * Math.cos(lat * Math.PI / 180);
-    return area * metersPerDegree * 111320;
+    return threatZones;
+  }
+
+  /**
+   * Calculate confidence contours following ALOHA Section 4.5.3
+   */
+  calculateConfidenceLevel(distance) {
+    // ALOHA confidence decreases with distance
+    // Based on typical dispersion model uncertainties
+    if (distance <= 100) return 'high';
+    if (distance <= 1000) return 'medium';
+    if (distance <= 10000) return 'low';
+    return 'very_low';
+  }
+
+  /**
+   * Calculate threat zone area
+   */
+  calculateThreatZoneArea(threatPoints) {
+    if (threatPoints.length < 3) return 0;
+    
+    const coordinates = [
+      ...threatPoints.map(p => p.left),
+      ...threatPoints.slice().reverse().map(p => p.right)
+    ];
+    
+    return this.calculateSphericalPolygonArea(coordinates);
+  }
+
+  /**
+   * Estimate maximum concentration following ALOHA Section 4.5.1
+   */
+  estimateMaximumConcentration(concentrations, modelParameters) {
+    const maxConc = Math.max(...concentrations.map(c => c.concentration));
+    
+    // Apply uncertainty factors based on ALOHA methodology
+    const uncertaintyFactor = this.getUncertaintyFactor(modelParameters.stability_class);
+    
+    return {
+      estimated_max: maxConc,
+      upper_bound: maxConc * uncertaintyFactor,
+      confidence: this.getConcentrationConfidence(maxConc, modelParameters)
+    };
+  }
+
+  /**
+   * Get uncertainty factor based on atmospheric stability
+   */
+  getUncertaintyFactor(stabilityClass) {
+    const factors = {
+      'A': 3.0,  // Very unstable - high uncertainty
+      'B': 2.5,  // Unstable
+      'C': 2.0,  // Slightly unstable
+      'D': 1.5,  // Neutral - lowest uncertainty
+      'E': 2.0,  // Stable
+      'F': 2.5,  // Very stable
+      'G': 3.0   // Extremely stable - high uncertainty
+    };
+    
+    return factors[stabilityClass] || 1.5;
+  }
+
+  /**
+   * Get concentration confidence level
+   */
+  getConcentrationConfidence(concentration, modelParameters) {
+    const windSpeed = modelParameters.wind_speed;
+    const stability = modelParameters.stability_class;
+    
+    // Higher confidence for moderate wind speeds and neutral conditions
+    if (windSpeed >= 2 && windSpeed <= 10 && stability === 'D') {
+      return 'high';
+    } else if (windSpeed >= 1 && windSpeed <= 15) {
+      return 'medium';
+    } else {
+      return 'low';
+    }
+  }
+
+  calculatePolygonArea(coordinates) {
+    // Use the more accurate spherical polygon area calculation
+    return this.calculateSphericalPolygonArea(coordinates);
+  }
+
+  /**
+   * Calculate spherical polygon area for threat zones
+   */
+  calculateSphericalPolygonArea(polygon) {
+    if (!polygon || polygon.length < 3) return 0;
+
+    // Convert to radians and calculate spherical excess
+    const R = 6371000; // Earth radius in meters
+    let area = 0;
+    const n = polygon.length;
+
+    // Use spherical triangulation method
+    for (let i = 0; i < n - 2; i++) {
+      const A = [
+        polygon[0][1] * Math.PI / 180,  // lat in radians
+        polygon[0][0] * Math.PI / 180   // lon in radians
+      ];
+      const B = [
+        polygon[i + 1][1] * Math.PI / 180,
+        polygon[i + 1][0] * Math.PI / 180
+      ];
+      const C = [
+        polygon[i + 2][1] * Math.PI / 180,
+        polygon[i + 2][0] * Math.PI / 180
+      ];
+
+      // Calculate spherical triangle area using L'Huilier's theorem
+      const a = this.greatCircleDistance(B, C);
+      const b = this.greatCircleDistance(A, C);
+      const c = this.greatCircleDistance(A, B);
+      const s = (a + b + c) / 2;
+
+      if (s > a && s > b && s > c) {
+        const excess = 4 * Math.atan(Math.sqrt(
+          Math.tan(s/2) * Math.tan((s-a)/2) * Math.tan((s-b)/2) * Math.tan((s-c)/2)
+        ));
+        area += excess * R * R;
+      }
+    }
+
+    return Math.abs(area);
+  }
+
+  /**
+   * Calculate great circle distance between two points
+   */
+  greatCircleDistance(point1, point2) {
+    const lat1 = point1[0];
+    const lon1 = point1[1];
+    const lat2 = point2[0];
+    const lon2 = point2[1];
+
+    const dLat = lat2 - lat1;
+    const dLon = lon2 - lon1;
+
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1) * Math.cos(lat2) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+
+    return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 }
 

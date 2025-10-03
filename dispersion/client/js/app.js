@@ -198,14 +198,18 @@ class App {
 
             // Recalculate dispersion with new weather
             if (window.UI.currentRelease) {
-                const calculation = await API.calculateDispersion(window.UI.currentRelease.id);
+                const calculation = await API.getLatestCalculation(window.UI.currentRelease.id);
                 
-                if (calculation.plume_geometry) {
+                if (calculation && calculation.plume_geometry) {
                     window.MapManager.displayPlume(calculation);
                 }
                 
-                if (calculation.receptor_impacts) {
+                if (calculation && calculation.receptor_impacts) {
                     window.UI.updateReceptorImpacts(calculation.receptor_impacts);
+                }
+
+                if (calculation) {
+                    window.UI.updateModelInformation(calculation);
                 }
             }
 
@@ -242,7 +246,7 @@ class App {
                     ${error.message}
                 </p>
                 <p>Please refresh the page and try again.</p>
-                <button onclick="window.location.reload()" style="
+                <button class="reload-btn" data-action="reload" style="
                     background: #f44336;
                     color: white;
                     border: none;

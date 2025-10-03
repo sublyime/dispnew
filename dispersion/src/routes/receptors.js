@@ -107,7 +107,7 @@ router.post('/', async (req, res) => {
 
     const query = `
       INSERT INTO receptors (name, location, receptor_type, height, sensitivity_level, population, properties)
-      VALUES ($1, ST_GeomFromText('POINT($2 $3)', 4326), $4, $5, $6, $7, $8)
+      VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, $7, $8)
       RETURNING id, name, receptor_type, ST_X(location) as longitude, ST_Y(location) as latitude
     `;
 
@@ -170,7 +170,7 @@ router.put('/:id', async (req, res) => {
 
     if (latitude && longitude) {
       paramCount += 2;
-      query += `, location = ST_GeomFromText('POINT($${paramCount-1} $${paramCount})', 4326)`;
+      query += `, location = ST_SetSRID(ST_MakePoint($${paramCount-1}, $${paramCount}), 4326)`;
       values.push(parseFloat(longitude), parseFloat(latitude));
     }
 
